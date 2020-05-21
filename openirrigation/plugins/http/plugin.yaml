@@ -1,0 +1,5 @@
+id: http
+name: HTTP
+description: OpenIrrigation core HTTP service
+depends: []
+core: true
