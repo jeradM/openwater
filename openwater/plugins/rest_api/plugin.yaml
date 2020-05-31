@@ -1,0 +1,6 @@
+id: rest_api
+name: Rest API
+description: OpenIrrigation core RESTful API
+depends: []
+core: true
+user: true

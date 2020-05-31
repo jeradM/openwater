@@ -1,0 +1,6 @@
+id: gpio
+name: Async Friendly GPIO
+description: OpenIrrigation core GPIO
+depends: []
+core: true
+user: false

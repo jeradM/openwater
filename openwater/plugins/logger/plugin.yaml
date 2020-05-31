@@ -1,0 +1,6 @@
+id: logger
+name: Logger
+description: OpenIrrigation core Logger
+depends: []
+core: true
+user: true

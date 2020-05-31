@@ -1,0 +1,7 @@
+id: shift_register
+name: Shift Register zone control
+description: Control zones using a shift register
+depends:
+  - gpio
+core: false
+user: true

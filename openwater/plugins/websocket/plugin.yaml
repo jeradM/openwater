@@ -1,0 +1,5 @@
+id: websocket
+name: OpenWater core websocket api
+description: Monitor OpenWater state over websocket connection
+core: false
+user: true

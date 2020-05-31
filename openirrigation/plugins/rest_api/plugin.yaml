@@ -1,6 +1,0 @@
-id: rest_api
-name: Rest API
-description: OpenIrrigation core RESTful API
-depends:
-  - http
-core: true

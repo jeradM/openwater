@@ -1,5 +1,0 @@
-id: scheduler
-name: Scheduler
-description: OpenIrrigation core irrigation scheduler
-depends: []
-core: true
