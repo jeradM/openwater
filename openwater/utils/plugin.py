@@ -111,7 +111,7 @@ async def get_plugins(
                     plugin_defs.append(plugin_from_manifest(path, pkg_name, p))
         return plugin_defs
 
-    res = await ow.async_create_task(scan_plugins)
+    res = await ow.add_job(scan_plugins)
     plugins = {p.id: p for p in res}
     ow.plugins.all = plugins
     return plugins

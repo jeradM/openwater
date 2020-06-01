@@ -6,6 +6,7 @@ from starlette.endpoints import HTTPEndpoint, WebSocketEndpoint
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.routing import Route, Mount
+from starlette.schemas import SchemaGenerator
 from uvicorn import Server, Config
 
 if TYPE_CHECKING:

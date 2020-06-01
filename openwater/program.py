@@ -1,14 +1,49 @@
 import logging
 from abc import abstractmethod, ABC
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Optional, Callable, Collection
+from typing import TYPE_CHECKING, Optional, Callable, Collection, Type, Dict, Set
 
 from openwater.constants import EVENT_TIMER_TICK_SEC, EVENT_PROGRAM_COMPLETED
+from openwater.database import model
+from openwater.errors import ProgramException, OWError
 
 if TYPE_CHECKING:
     from openwater.core import OpenWater
 
 _LOGGER = logging.getLogger(__name__)
+
+
+async def load_programs(ow: "OpenWater"):
+    if not ow.db:
+        raise OWError("OpenWater database not initialized")
+
+    rows = await ow.db.connection.fetch_all(query=model.program.select())
+    for row in rows:
+        program = dict(row)
+        program_type = ow.programs.registry.get_program_for_type(
+            program["program_type"]
+        )
+        if program_type is None:
+            continue
+        z = program_type.create(ow, program)
+        ow.programs.store.add_zone(z)
+
+
+async def insert_program(ow: "OpenWater", data: dict) -> int:
+    conn = ow.db.connection
+    new_id = await conn.execute(query=model.program.insert(), values=data)
+    return new_id
+
+
+async def update_program(ow: "OpenWater", data: dict):
+    conn = ow.db.connection
+    await conn.execute(query=model.program.update(), values=data)
+
+
+async def delete_program(ow: "OpenWater", id_: int):
+    conn = ow.db.connection
+    query = model.program.delete().where(model.program.c.id == id_)
+    await conn.execute(query=query)
 
 
 class BaseProgram(ABC):
@@ -115,7 +150,7 @@ class ProgramController:
     async def program_complete(self):
         _LOGGER.debug("Program complete")
         self.remove_listener()
-        self.ow.bus.async_fire(
+        self.ow.bus.fire(
             EVENT_PROGRAM_COMPLETED, data={"program": self, "now": datetime.now()}
         )
 
@@ -124,7 +159,7 @@ class ProgramController:
 
         for step in current_step.steps:
             if step.running and step.is_complete():
-                await self.ow.zone_controller.close_zone(step.zone_id)
+                await self.ow.zones.controller.close_zone(step.zone_id)
                 step.end()
 
         if not current_step.is_complete():
@@ -149,5 +184,108 @@ class ProgramController:
         for step in next_step.steps:
             if not step.zone_id:
                 continue
-            await self.ow.zone_controller.open_zone(step.zone_id)
+            await self.ow.zones.controller.open_zone(step.zone_id)
         next_step.start()
+
+
+class RegisteredProgramType:
+    def __init__(
+        self,
+        cls: Type[BaseProgram],
+        create_func: Callable[["OpenWater", dict], BaseProgram],
+    ):
+        self.cls = cls
+        self.create = create_func
+
+
+class ProgramRegistry:
+    def __init__(self):
+        self.program_types: Dict[str, RegisteredProgramType] = dict()
+
+    def register_program_type(
+        self, program_type: str, cls: Type[BaseProgram], create_func: Callable
+    ) -> None:
+        if program_type in self.program_types:
+            _LOGGER.error(
+                "Attempting to register duplicate zone type: {}".format(program_type)
+            )
+            raise ProgramException(
+                "Program type '{}' has already been registered".format(program_type)
+            )
+
+        self.program_types[program_type] = RegisteredProgramType(cls, create_func)
+        _LOGGER.debug("Registered program type {}:{}".format(program_type, cls))
+
+    def unregister_program_type(self, program_type: str) -> None:
+        if program_type in self.program_types:
+            self.program_types.pop(program_type)
+            _LOGGER.debug("Unregistered program type: {}".format(program_type))
+
+    def get_program_for_type(self, program_type: str) -> RegisteredProgramType:
+        if program_type not in self.program_types:
+            raise ProgramException("Program type not found: {}".format(program_type))
+
+        return self.program_types[program_type]
+
+
+class ProgramStore:
+    def __init__(self, ow: "OpenWater", registry: ProgramRegistry):
+        self._ow = ow
+        self._registry = registry
+        self.programs: Set[BaseProgram] = set()
+
+    def get_program(self, id_: int) -> BaseProgram:
+        """Get a program from the store by id"""
+        program = next(z for z in self.programs if z.id == id_)
+        if program is None:
+            raise ProgramException("Program not found: {}".format(id_))
+        return program
+
+    def add_program(self, program: BaseProgram) -> None:
+        """Add a new program to the store"""
+        z = self.get_program(program.id)
+        if z:
+            raise ProgramException("Program {} already exists")
+        self.programs.add(program)
+
+    def remove_program(self, program: BaseProgram) -> None:
+        """Remove a program from the store"""
+        if program not in self.programs:
+            raise ProgramException("Zone {} not found".format(program.id))
+        self.programs.remove(program)
+
+    async def create_program(self, data: Dict) -> BaseProgram:
+        """Create a new zone and insert database record"""
+        id_ = await insert_program(self._ow, data)
+
+        program_type = self._registry.get_program_for_type(data["program_type"])
+        program = program_type.create(self._ow, data)
+        program.id = id_
+
+        self._ow.bus.fire(EVENT_ZONE_ADDED, zone.to_dict())
+        self.programs.add(program)
+
+        return program
+
+    async def update_program(self, data: Dict) -> BaseProgram:
+        """Update an existing program and update database record"""
+        await update_program(self._ow, data)
+
+        program_type = self._registry.get_program_for_type(data["program_type"])
+        program = program_type.create(self._ow, data)
+        self.programs.add(program)
+        return program
+
+    async def delete_program(self, program: BaseProgram):
+        """Delete a program from the store and remove database record"""
+        query = model.program.delete().where(model.program.c.id == program.id)
+        con = self._ow.db.connection
+        await con.execute(query=query)
+        self.remove_program(program)
+
+
+class ProgramManager:
+    def __init__(self, ow: "OpenWater"):
+        self.registry = ProgramRegistry()
+        self.store = ProgramStore(ow, self.registry)
+        self.controller = ProgramController(ow)

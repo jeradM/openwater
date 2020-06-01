@@ -38,11 +38,11 @@ async def run(args: argparse.Namespace) -> int:
 
     ow = await bootstrap.setup_ow()
     if args.upgrade_db:
-        ow.async_add_task(migrate_db, ow, args.revision)
+        ow.add_job(migrate_db, ow, args.revision)
         return 0
     if args.create_revision:
         msg = args.create_revision
-        ow.async_add_task(generate_revision, ow, msg)
+        ow.add_job(generate_revision, ow, msg)
         return 0
     if args.populate:
         await populate_db(ow)

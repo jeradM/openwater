@@ -38,7 +38,7 @@ async def ensure_config_file(ow):
     if os.path.isfile(config_file):
         return
 
-    await ow.async_create_task(create_default_config, config_file)
+    await ow.add_job(create_default_config, config_file)
 
 
 def create_default_config(config_file):

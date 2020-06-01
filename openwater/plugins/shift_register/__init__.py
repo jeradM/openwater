@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING, Optional
 
-from openwater.core import loopsafe
 from openwater.errors import ZoneException
 from openwater.plugins.gpio import DATA_GPIO, OWGpio
 from openwater.zone import BaseZone
@@ -26,14 +25,14 @@ def setup_plugin(ow: "OpenWater", config: dict = {}):
     if not (data_pin and clock_pin and oe_pin and latch_pin):
         raise ZoneException("Must define all required shift register pins")
 
-    gpio.async_set_output([data_pin, clock_pin, oe_pin, latch_pin])
+    gpio.set_output([data_pin, clock_pin, oe_pin, latch_pin])
     active_high = config.get("active_high", True)
     sr = ShiftRegister(
         ow, gpio, data_pin, clock_pin, oe_pin, latch_pin, num_reg, active_high
     )
     ow.data[DATA_SHIFT_REGISTER] = sr
 
-    ow.zone_controller.register_zone_type(
+    ow.zones.registry.register_zone_type(
         ZONE_TYPE_SHIFT_REGISTER, ShiftRegisterZone, create_zone
     )
 
@@ -48,11 +47,6 @@ class ShiftRegisterZone(BaseZone):
         self._sr: "ShiftRegister" = ow.data[DATA_SHIFT_REGISTER]
         self._sr_idx = zone_data["attrs"].get("sr_idx")
 
-    # def to_dict(self):
-    #     d = super().to_dict()
-    #     d["attrs"]["sr_idx"] = self._sr_idx
-    #     return d
-
     @property
     def extra_attrs(self):
         return {"sr_idx": self._sr_idx}
@@ -60,13 +54,11 @@ class ShiftRegisterZone(BaseZone):
     def is_open(self) -> bool:
         return bool(self._sr.get_reg_status(self._sr_idx))
 
-    def open(self) -> None:
-        self._sr.turn_on(self._sr_idx)
+    async def open(self) -> None:
+        await self._sr.async_turn_on(self._sr_idx)
 
-    def close(self) -> None:
-        self._sr.turn_off(self._sr_idx)
-        # task = self._sr.ow.async_create_task(self._sr.turn_off, self._sr_idx)
-        # await task
+    async def close(self) -> None:
+        await self._sr.async_turn_off(self._sr_idx)
 
     def get_zone_type(self) -> str:
         return "SHIFT_REGISTER"
@@ -107,16 +99,26 @@ class ShiftRegister:
         self._reg_mask = 0
 
     def write_registers(self) -> None:
-
-        self.g.async_low([self.clock_pin, self.latch_pin])
+        self.g.low([self.clock_pin, self.latch_pin])
         for reg in range(self.num_regs):
-            self.g.async_low(self.clock_pin)
+            self.g.low(self.clock_pin)
             if 1 & (self._reg_mask >> reg):
-                self.g.async_high(self.data_pin)
+                self.g.high(self.data_pin)
             else:
-                self.g.async_low(self.data_pin)
-            self.g.async_high(self.clock_pin)
-        self.g.async_high(self.latch_pin)
+                self.g.low(self.data_pin)
+            self.g.high(self.clock_pin)
+        self.g.high(self.latch_pin)
+
+    async def async_write_registers(self) -> None:
+        await self.g.async_low([self.clock_pin, self.latch_pin])
+        for reg in range(self.num_regs):
+            await self.g.async_low(self.clock_pin)
+            if 1 & (self._reg_mask >> reg):
+                await self.g.async_high(self.data_pin)
+            else:
+                await self.g.async_low(self.data_pin)
+            await self.g.async_high(self.clock_pin)
+        await self.g.async_high(self.latch_pin)
 
     def turn_on(self, reg: int) -> None:
         if reg > self.num_regs - 1:
@@ -131,7 +133,22 @@ class ShiftRegister:
         else:
             self._reg_mask &= 0 << reg
 
-        self.ow.run_in_executor(self.write_registers)
+        self.write_registers()
+
+    async def async_turn_on(self, reg: int) -> None:
+        if reg > self.num_regs - 1:
+            raise ZoneException(
+                "Attempted to turn on register {}, but SR only has {} registers",
+                reg,
+                self.num_regs,
+            )
+
+        if self.active_high:
+            self._reg_mask |= 1 << reg
+        else:
+            self._reg_mask &= 0 << reg
+
+        await self.async_write_registers()
 
     def turn_off(self, reg: int) -> None:
         if reg > self.num_regs - 1:
@@ -146,12 +163,28 @@ class ShiftRegister:
         else:
             self._reg_mask |= 1 << reg
 
-        self.ow.async_add_task(self.write_registers)
+        self.write_registers()
 
-    @loopsafe
+    async def async_turn_off(self, reg: int) -> None:
+        if reg > self.num_regs - 1:
+            raise ZoneException(
+                "Attempted to turn off register {}, but SR only has {} registers",
+                reg,
+                self.num_regs,
+            )
+
+        if self.active_high:
+            self._reg_mask &= 0 << reg
+        else:
+            self._reg_mask |= 1 << reg
+
+        await self.async_write_registers()
+
     def disable_output(self) -> None:
-        self.ow.async_create_task(self.g.high, self.oe_pin)
+        self.g.high(self.oe_pin)
 
-    @loopsafe
+    async def async_disable_outputs(self):
+        await self.g.async_high(self.oe_pin)
+
     def get_reg_status(self, reg: int):
         return 1 & (self._reg_mask >> reg)

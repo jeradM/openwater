@@ -15,7 +15,7 @@ DATA_GPIO = "GPIO"
 
 
 def setup_plugin(ow: "OpenWater", config: dict = {}):
-    ow.async_add_task(gpio.setmode, gpio.BCM)
+    ow.add_job(gpio.setmode, gpio.BCM)
     ow.data[DATA_GPIO] = OWGpio(ow)
 
 
@@ -30,35 +30,35 @@ class OWGpio:
     def set_output(self, pin: Union[Collection[int], int]) -> None:
         gpio.setup(pin, self.OUT)
 
-    def async_set_output(self, pin: Union[Collection[int], int]) -> None:
-        self.ow.run_in_executor(gpio.setup, pin, self.OUT)
+    async def async_set_output(self, pin: Union[Collection[int], int]) -> None:
+        await self.ow.add_job(gpio.setup, pin, self.OUT)
 
     def set_input(self, pin: Union[Collection[int], int]) -> None:
         gpio.setup(pin, self.IN)
 
-    def async_set_input(self, pin: Union[Collection[int], int]) -> None:
-        self.ow.run_in_executor(gpio.setup, pin, self.IN)
+    async def async_set_input(self, pin: Union[Collection[int], int]) -> None:
+        await self.ow.add_job(gpio.setup, pin, self.IN)
 
     def output(self, pin: Union[Collection[int], int], state: int) -> None:
         gpio.output(pin, state)
 
-    def async_output(self, pin: Union[Collection[int], int], state: int) -> None:
-        self.ow.run_in_executor(gpio.output, pin, state)
+    async def async_output(self, pin: Union[Collection[int], int], state: int) -> None:
+        await self.ow.add_job(gpio.output, pin, state)
 
     def low(self, pin: Union[Collection[int], int]) -> None:
         self.output(pin, self.LOW)
 
-    def async_low(self, pin: Union[Collection[int], int]) -> None:
-        self.async_output(pin, self.LOW)
+    async def async_low(self, pin: Union[Collection[int], int]) -> None:
+        await self.async_output(pin, self.LOW)
 
     def high(self, pin: Union[Collection[int], int]) -> None:
         self.output(pin, self.HIGH)
 
-    def async_high(self, pin: Union[Collection[int], int]) -> None:
-        self.async_output(pin, self.HIGH)
+    async def async_high(self, pin: Union[Collection[int], int]) -> None:
+        await self.async_output(pin, self.HIGH)
 
     def input(self, pin: int, state: int) -> int:
         return gpio.input(pin, state)
 
-    def async_input(self, pin: int) -> asyncio.Future:
-        return self.ow.create_future(gpio.input, pin)
+    async def async_input(self, pin: int) -> asyncio.Future:
+        return await self.ow.add_job(gpio.input, pin)

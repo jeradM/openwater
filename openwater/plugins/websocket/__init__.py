@@ -65,7 +65,7 @@ class Socket(WebSocketEndpoint):
     async def on_connect(self, websocket: WebSocket) -> None:
         ow: "OpenWater" = websocket.app.ow
         await websocket.accept()
-        zones = [zone.to_dict() for zone in ow.zone_controller.zones.values()]
+        zones = [zone.to_dict() for zone in ow.zones.store.get_zones]
         await websocket.send_json(ZonesResponse(zones).to_dict())
         ws: WebSocketApi = websocket.app.ow.data[DATA_WEBSOCKET]
         ws.add_client(websocket)

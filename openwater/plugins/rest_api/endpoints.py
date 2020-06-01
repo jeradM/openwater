@@ -1,53 +1,42 @@
+from typing import TYPE_CHECKING
+
 from starlette.endpoints import HTTPEndpoint
 from starlette.responses import JSONResponse
+from starlette import schemas
 
 from openwater.core import OpenWater
-from openwater.plugins.rest_api.zone import Zone, create_zone, zone_cmd
+from openwater.plugins.rest_api.zone import register_zone_endpoints
 from openwater.utils import plugin
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from openwater.core import OpenWater
 
+schema = schemas.SchemaGenerator(
+    {"openapi": "3.0.0", "info": {"title": "OpenWater API", "version": "0.0.1"}}
+)
+
 
 def init_endpoints(ow: OpenWater):
-    # ow.http.register_new_endpoint(Zones)
-    ow.http.register_endpoint(Zone)
-    ow.http.register_route(create_zone, "/api/zone", methods=["POST"])
-    ow.http.register_route(zones, "/api/zones/", methods=["GET"])
-    ow.http.register_route(
-        zone_cmd, "/api/zone/{zone_id:int}/{cmd:str}", methods=["POST"]
-    )
     ow.http.register_endpoint(Plugins)
-    ow.http.register_endpoint(Index)
+    register_zone_endpoints(ow.http.register_endpoint, ow.http.register_route)
+    ow.http.register_route(
+        openapi_schema, "/api/schema", methods=["GET"], include_in_schema=False
+    )
 
 
-class Index(HTTPEndpoint):
-    path = "/api/"
-
-    async def get(self, request):
-        return JSONResponse({"hello": "world"})
-
-
-async def zones(request):
-    ow: "OpenWater" = request.app.ow
-    zones = [z.to_dict() for z in ow.zone_controller.zones.values()]
-    return JSONResponse(zones)
-
-
-class Zones(HTTPEndpoint):
-    path = "/api/zones/"
-
-    async def get(self, request):
-        ow: "OpenWater" = request.app.ow
-        zones = [z.to_dict() for z in ow.zone_controller.zones]
-        return JSONResponse(zones)
+async def openapi_schema(request):
+    return schema.OpenAPIResponse(request)
 
 
 class Plugins(HTTPEndpoint):
     path = "/api/plugins"
 
     async def get(self, request):
+        """
+        description: Get all loaded plugins
+        responses:
+          200:
+            description: a list of all loaded plugins
+        """
         p = await plugin.get_plugins(request.app.ow)
         return JSONResponse([v.to_dict() for v in p.values()])

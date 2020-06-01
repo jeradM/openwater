@@ -101,11 +101,11 @@ class OWDatabase:
 
     async def connect(self):
         await self._database.connect()
-        self.ow.bus.async_fire("DB_CONNECTED")
+        self.ow.bus.fire("DB_CONNECTED")
 
     async def disconnect(self):
         await self._database.disconnect()
-        self.ow.bus.async_fire("DB_DISCONNECTED")
+        self.ow.bus.fire("DB_DISCONNECTED")
 
     def get_session(self):
         pass

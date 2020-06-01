@@ -17,21 +17,13 @@ from openwater.constants import (
 from openwater.database import OWDatabase
 from openwater.ow_http import OWHttp
 from openwater.plugins.gpio import OWGpio
-from openwater.program import BaseProgram
+from openwater.program import BaseProgram, ProgramManager
 from openwater.scheduler import Scheduler
+from openwater.utils.decorator import is_blocking, is_nonblocking, nonblocking
 from openwater.utils.plugin import OWPlugin, PluginRegistry
-from openwater.zone import ZoneController
+from openwater.zone import ZoneController, ZoneManager
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def loopsafe(func: Callable):
-    setattr(func, "_ow_loopsafe", True)
-    return func
-
-
-def is_loopsafe(func: Callable):
-    return getattr(func, "_ow_loopsafe", False) is True
 
 
 class OpenWater:
@@ -41,44 +33,26 @@ class OpenWater:
         self.event_loop: AbstractEventLoop = asyncio.get_event_loop()
         self.executor = ThreadPoolExecutor()
         self.bus: EventBus = EventBus(self)
-        self.zone_controller = ZoneController(self)
-        self.scheduler = Scheduler(self)
         self.timer = Timer(self)
+        self.db: "OWDatabase" = None
+
+        self.zones = ZoneManager(self)
+        self.programs = ProgramManager(self)
+
+        self.scheduler = Scheduler(self)
         self.plugins_: Dict[str, OWPlugin] = {}
         self.plugins = PluginRegistry()
+
         self.http: Optional["OWHttp"] = None
         self.gpio: Optional["OWGpio"] = None
-        self.db: "OWDatabase" = None
-        self.programs: List[BaseProgram] = []
         self._stopped = None
 
         self.status = STATUS_STARTING
 
-    def run_coroutine(self, c: Awaitable) -> None:
-        asyncio.create_task(c)
+    def add_job_ext(self, c: Union[Callable, Awaitable], *args: Any) -> None:
+        self.event_loop.call_soon_threadsafe(c, *args)
 
-    def run_coroutine_threadsafe(self, c: Awaitable) -> None:
-        self.event_loop.call_soon_threadsafe(self.run_coroutine, c)
-
-    def run_in_executor(self, c: Callable, *args) -> None:
-        self.event_loop.run_in_executor(None, c, *args)
-
-    def run_in_executor_threadsafe(self, c: Callable, *args) -> None:
-        self.event_loop.call_soon_threadsafe(self.run_in_executor, c, *args)
-
-    def run_in_loop(self, c: Callable, *args) -> None:
-        self.event_loop.call_soon(c, *args)
-
-    def run_in_loop_threadsafe(self, c: Callable, *args) -> None:
-        self.event_loop.call_soon_threadsafe(self.run_in_loop, c, *args)
-
-    def create_future(self, c: Callable, *args) -> asyncio.Future:
-        return self.event_loop.run_in_executor(None, c, *args)
-
-    def create_task(self, c: Union[Callable, Awaitable], *args: Any) -> None:
-        self.event_loop.call_soon_threadsafe(self.async_create_task, c, *args)
-
-    def async_create_task(
+    def add_job(
         self, c: Union[Callable, Awaitable], *args: Any
     ) -> Optional[asyncio.Future]:
         target = c
@@ -90,27 +64,25 @@ class OpenWater:
             task = asyncio.create_task(c)
         elif asyncio.iscoroutinefunction(target):
             task = asyncio.create_task(c(*args))
-        elif is_loopsafe(target):
+        elif is_nonblocking(target):
             self.event_loop.call_soon(c, *args)
         else:
-            task = self.event_loop.run_in_executor(self.executor, c, *args)
+            task = self.event_loop.run_in_executor(None, c, *args)
 
         return task
-
-    def async_add_task(self, c: Union[Callable, Awaitable], *args: Any) -> None:
-        self.async_create_task(c, *args)
 
     async def start(self) -> int:
         _LOGGER.info("Starting Open Irrigation")
         self._stopped = asyncio.Event()
-        self.async_add_task(self.http.run())
+        self.add_job(self.http.run())
 
         self.status = STATUS_RUNNING
-        self.bus.async_fire(EVENT_APP_STARTED)
+        self.bus.fire(EVENT_APP_STARTED)
 
         await self._stopped.wait()
         return 0
 
+    @nonblocking
     def stop(self) -> None:
         self.event_loop.remove_signal_handler(signal.SIGTERM)
         self.event_loop.remove_signal_handler(signal.SIGINT)
@@ -132,25 +104,28 @@ class EventBus:
         self.ow = ow
         self._listeners: Dict[str, List] = {}
 
+    def listen_ext(self, event_type: str, func: Callable[[Event], Any]) -> None:
+        self.ow.event_loop.call_soon_threadsafe(self.listen, event_type, func)
+
     def listen(
-        self, event: str, callback: Callable[[Event], Any]
+        self, event_type: str, callback_: Callable[[Event], Any]
     ) -> Callable[[], None]:
         """ Add listener for this event type """
 
         def stop_listening():
-            self.remove_listener(event, callback)
+            self.remove_listener(event_type, callback_)
 
-        if event in self._listeners:
-            self._listeners[event].append(callback)
+        if event_type in self._listeners:
+            self._listeners[event_type].append(callback_)
         else:
-            self._listeners[event] = [callback]
+            self._listeners[event_type] = [callback_]
 
         return stop_listening
 
     def listen_once(self, event: str, callback: Callable[[Event], Any]) -> None:
         def listener_wrapper(evt: Event) -> None:
             self.remove_listener(event, listener_wrapper)
-            self.ow.run_in_loop(callback, evt)
+            self.ow.add_job(callback, evt)
 
         self.listen(event, listener_wrapper)
 
@@ -160,22 +135,18 @@ class EventBus:
         except (KeyError, ValueError):
             _LOGGER.debug("Unable to remove listener")
 
-    def fire(self, event: str, data: Optional[Dict] = None) -> None:
-        self.ow.run_in_loop(self.async_fire, event, data)
-        pass
+    def fire_ext(self, event: str, data: Optional[Dict] = None) -> None:
+        self.ow.event_loop.call_soon_threadsafe(self.fire, data)
 
-    def async_fire(self, event: str, data: Optional[Dict] = None) -> None:
+    def fire(self, event: str, data: Optional[Dict] = None) -> None:
         """ Fire event (call all listeners) """
         if event not in self._listeners:
             return
 
         evt = Event(self.ow, event, data, datetime.now())
 
-        for l in self._listeners.get(event):
-            if asyncio.iscoroutinefunction(l):
-                self.ow.run_coroutine(l(evt))
-            else:
-                self.ow.run_in_executor(l, evt)
+        for listener in self._listeners.get(event):
+            self.ow.add_job(listener, event)
 
 
 class Timer:
@@ -184,11 +155,12 @@ class Timer:
         self._ow.bus.listen_once(EVENT_APP_STARTED, self.run)
 
     def second_tick(self, now: datetime) -> None:
-        self._ow.bus.async_fire(EVENT_TIMER_TICK_SEC, {"now": now})
+        self._ow.bus.fire(EVENT_TIMER_TICK_SEC, {"now": now})
 
     def minute_tick(self, now: datetime) -> None:
-        self._ow.bus.async_fire(EVENT_TIMER_TICK_MIN, {"now": now})
+        self._ow.bus.fire(EVENT_TIMER_TICK_MIN, {"now": now})
 
+    @nonblocking
     def run(self, _: Event) -> None:
         async def _run():
             while True:
@@ -200,4 +172,4 @@ class Timer:
                 if now.second == 0:
                     self.minute_tick(now)
 
-        self._ow.run_coroutine(_run())
+        self._ow.add_job(_run)

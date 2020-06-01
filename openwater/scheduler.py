@@ -22,7 +22,7 @@ class Scheduler:
         if self.running_program is not None:
             return
 
-        programs = self.ow.programs
+        programs = self.ow.programs.store.programs
         ready = [p for p in programs if p.should_run(event.data["now"])]
         if not ready:
             _LOGGER.debug("No programs scheduled to run")
