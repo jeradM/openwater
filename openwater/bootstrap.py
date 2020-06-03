@@ -3,7 +3,7 @@ from openwater.core import OpenWater
 from openwater.database import OWDatabase
 from openwater.ow_http import setup_http
 from openwater.utils import plugin
-from openwater.zone import load_zones
+from openwater.zone.helpers import load_zones
 
 CORE_PLUGINS = ["rest_api", "gpio", "shift_register", "websocket"]
 

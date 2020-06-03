@@ -2,8 +2,7 @@ import logging
 from typing import TYPE_CHECKING, Optional
 
 from openwater.constants import EVENT_TIMER_TICK_MIN, EVENT_PROGRAM_COMPLETED
-from openwater.plugins.websocket import DATA_WEBSOCKET
-from openwater.program import BaseProgram
+from openwater.program.model import BaseProgram
 
 if TYPE_CHECKING:
     from openwater.core import OpenWater, Event

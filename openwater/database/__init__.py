@@ -11,6 +11,9 @@ from openwater.database.model import (
     zone,
     master_zone_join,
     plugin_config,
+    program,
+    program_run,
+    zone_run,
 )
 
 if TYPE_CHECKING:
@@ -50,37 +53,47 @@ async def populate_db(ow: "OpenWater"):
 
     tx = await conn.transaction()
 
+    await conn.execute(zone.delete())
+    await conn.execute(zone_run.delete())
+    await conn.execute(master_zone_join.delete())
+    await conn.execute(plugin_config.delete())
+    await conn.execute(program.delete())
+    await conn.execute(program_run.delete())
+
     try:
         query = zone.insert()
         values = {
             "name": "Master Zone 1",
-            "active": True,
             "zone_type": "SHIFT_REGISTER",
+            "is_master": True,
             "attrs": {"sr_idx": 0},
         }
         result = await conn.execute(query=query, values=values)
-        print("Result: {}".format(result))
 
         query = zone.insert()
-        values = {
-            "name": "Test Zone 1",
-            "active": True,
-            "zone_type": "SHIFT_REGISTER",
-            "attrs": {"sr_idx": 1, "soil_type": "CLAY", "precip_rate": 0.2},
-        }
-        result = await conn.execute(query=query, values=values)
-        print("Result: {}".format(result))
+        for i in range(1, 8):
+            values = {
+                "name": "Test Zone {}".format(i),
+                "zone_type": "SHIFT_REGISTER",
+                "attrs": {
+                    "sr_idx": i,
+                    "soil_type": "CLAY",
+                    "precip_rate": 0.2 + (i / 10),
+                },
+            }
+            result = await conn.execute(query=query, values=values)
 
         query = master_zone_join.insert()
-        values = {"zone_id": 1, "master_zone_id": 0}
-        await conn.execute(query=query, values=values)
+        for i in range(2, 5):
+            values = {"zone_id": i, "master_zone_id": 1}
+            await conn.execute(query=query, values=values)
 
         query = plugin_config.insert()
         values = {
             "plugin_id": "shift_register",
             "version": 1,
             "config": {
-                "num_reg": 8,
+                "num_reg": 24,
                 "data_pin": 27,
                 "clock_pin": 22,
                 "latch_pin": 17,

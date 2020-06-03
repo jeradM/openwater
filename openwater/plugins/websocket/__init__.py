@@ -8,7 +8,9 @@ from starlette.endpoints import WebSocketEndpoint
 from starlette.websockets import WebSocket
 
 from openwater.constants import EVENT_ZONE_ADDED, EVENT_ZONE_UPDATED
+from openwater.plugins.websocket.handlers import setup_handlers
 from openwater.plugins.websocket.response import ZoneResponse, ZonesResponse
+from openwater.utils.decorator import nonblocking
 
 if TYPE_CHECKING:
     from openwater.core import OpenWater
@@ -27,7 +29,9 @@ ws_command_validator: Validator = Validator(WS_COMMAND_SCHEMA)
 
 async def setup_plugin(ow: "OpenWater", config: Dict):
     ow.http.register_websocket_endpoint(Socket)
-    ow.data[DATA_WEBSOCKET] = WebSocketApi(ow)
+    ws = WebSocketApi(ow)
+    ow.data[DATA_WEBSOCKET] = ws
+    setup_handlers(ow, ws)
 
 
 async def handle_ws_command(data: dict) -> dict:
@@ -52,6 +56,17 @@ class WebSocketApi:
         for client in self.clients:
             await client.send_json(resp.to_dict())
 
+    @nonblocking
+    def send(self, type: str, data: Any, connection: WebSocket = None):
+        if not self.clients:
+            return
+        msg = {"type": type, "data": data}
+        if connection:
+            self._ow.add_job(connection.send_json, msg)
+        else:
+            for client in self.clients:
+                self._ow.add_job(client.send_json, msg)
+
     def add_client(self, ws: WebSocket):
         self.clients.append(ws)
 
@@ -65,7 +80,7 @@ class Socket(WebSocketEndpoint):
     async def on_connect(self, websocket: WebSocket) -> None:
         ow: "OpenWater" = websocket.app.ow
         await websocket.accept()
-        zones = [zone.to_dict() for zone in ow.zones.store.get_zones]
+        zones = [zone.to_dict() for zone in ow.zones.store.zones]
         await websocket.send_json(ZonesResponse(zones).to_dict())
         ws: WebSocketApi = websocket.app.ow.data[DATA_WEBSOCKET]
         ws.add_client(websocket)

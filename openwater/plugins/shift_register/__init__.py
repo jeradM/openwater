@@ -1,8 +1,10 @@
 from typing import TYPE_CHECKING, Optional
 
-from openwater.errors import ZoneException
+from cerberus import Validator
+
+from openwater.errors import ZoneException, ZoneValidationException
 from openwater.plugins.gpio import DATA_GPIO, OWGpio
-from openwater.zone import BaseZone
+from openwater.zone.model import BaseZone
 
 if TYPE_CHECKING:
     from openwater.core import OpenWater
@@ -38,14 +40,29 @@ def setup_plugin(ow: "OpenWater", config: dict = {}):
 
 
 def create_zone(ow: "OpenWater", zone_data: dict) -> "ShiftRegisterZone":
-    return ShiftRegisterZone(ow, zone_data)
+    attr_schema = {"sr_idx": {"type": "integer", "required": True}}
+    v: Validator = Validator(attr_schema)
+    v.allow_unknown = True
+    if not v.validate(zone_data["attrs"]):
+        raise ZoneValidationException("ShiftRegisterZone validation failed", v.errors)
+    return ShiftRegisterZone.of(ow, zone_data)
 
 
 class ShiftRegisterZone(BaseZone):
-    def __init__(self, ow: "OpenWater", zone_data: dict):
-        super().__init__(zone_data)
+    ATTR_SCHEMA = {"sr_idx": {"type": "integer", "required": True}}
+
+    def __init__(
+        self,
+        ow: "OpenWater",
+        id_: int,
+        name: str,
+        zone_type: str,
+        is_master: bool,
+        attrs: dict,
+    ):
+        super().__init__(ow, id_, name, zone_type, is_master, attrs)
         self._sr: "ShiftRegister" = ow.data[DATA_SHIFT_REGISTER]
-        self._sr_idx = zone_data["attrs"].get("sr_idx")
+        self._sr_idx = attrs.get("sr_idx")
 
     @property
     def extra_attrs(self):
@@ -68,7 +85,7 @@ class ShiftRegisterZone(BaseZone):
         sr = ow.data[DATA_SHIFT_REGISTER]
         num_reg = sr.num_regs
         return {
-            "register_idx": {
+            "sr_idx": {
                 "type": "select",
                 "label": "Physical Shift Register Index",
                 "options": list(range(num_reg)),

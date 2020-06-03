@@ -22,6 +22,12 @@ class ZoneRegistrationException(OWError):
     pass
 
 
+class ZoneValidationException(OWError):
+    def __init__(self, msg, errors):
+        super().__init__(msg)
+        self.errors = errors
+
+
 class PluginException(OWError):
     """Raised by plugin loader/registry"""
 

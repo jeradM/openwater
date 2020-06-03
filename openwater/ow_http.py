@@ -16,7 +16,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def setup_http(ow: "OpenWater"):
-    middleware = [Middleware(CORSMiddleware, allow_origins=["*"])]
+    middleware = [Middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"])]
     app = Starlette(on_shutdown=[ow.stop], middleware=middleware)
     setattr(app, "ow", ow)
     config = Config(app)

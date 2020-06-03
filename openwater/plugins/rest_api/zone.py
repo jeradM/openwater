@@ -1,32 +1,22 @@
 import json
+import logging
 import sys
 from json import JSONEncoder
 
-from cerberus import Validator
-from starlette.background import BackgroundTask
 from starlette.endpoints import HTTPEndpoint
 from typing import TYPE_CHECKING, Callable, Any
 
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-from openwater.errors import ZoneException
+from openwater.errors import ZoneException, ZoneValidationException
 from openwater.utils.decorator import nonblocking
-from openwater.zone import BaseZone
+from openwater.zone.model import BaseZone
 
 if TYPE_CHECKING:
     from openwater.core import OpenWater
 
-
-ZONE_SCHEMA = {
-    "id": {"type": "integer"},
-    "name": {"type": "string", "maxlength": 100, "required": True},
-    "active": {"type": "boolean", "required": True},
-    "zone_type": {"type": "string", "maxlength": 50, "required": True},
-    "attrs": {"type": "dict", "allow_unknown": True, "required": True},
-}
-
-zone_validator: Validator = Validator(ZONE_SCHEMA)
+_LOGGER = logging.getLogger(__name__)
 
 
 def register_zone_endpoints(endpoint: Callable, route: Callable):
@@ -65,15 +55,20 @@ class Zone(HTTPEndpoint):
     async def put(self, request):
         """Update an existing zone"""
         ow: "OpenWater" = request.app.ow
-        json = await request.json()
-        valid = zone_validator.validate(json)
-        if not valid:
+        data = await request.json()
+        try:
+            zone = await ow.zones.store.update_zone(data)
+        except ZoneValidationException as e:
+            _LOGGER.error("Zone update failed validation")
             return JSONResponse(
-                {"errors": zone_validator.errors, "msg": "Invalid zone data"},
-                status_code=400,
+                {"errors": e.errors, "msg": "Invalid zone data"}, status_code=400,
             )
-        zone = await ow.zones.store.update_zone(json)
         return JSONResponse(zone.to_dict())
+
+    async def delete(self, request):
+        ow: "OpenWater" = request.app.ow
+        await ow.zones.store.delete_zone(request.path_params["zone_id"])
+        return JSONResponse(status_code=204)
 
 
 async def get_zones(request):
@@ -97,14 +92,14 @@ async def create_zone(request: Request):
         description: Invalid data sent
     """
     ow: "OpenWater" = request.app.ow
-    json = await request.json()
-    valid = zone_validator.validate(json)
-    if not valid:
+    data = await request.json()
+    try:
+        zone = await ow.zones.store.create_zone(data)
+    except ZoneValidationException as e:
+        _LOGGER.error("Create zone failed validation")
         return JSONResponse(
-            {"errors": zone_validator.errors, "msg": "Invalid zone data"},
-            status_code=400,
+            {"errors": e.errors, "msg": "Invalid zone data"}, status_code=400,
         )
-    zone = await ow.zones.store.create_zone(json)
     return ZoneJSONResponse(zone)
 
 

@@ -17,11 +17,11 @@ from openwater.constants import (
 from openwater.database import OWDatabase
 from openwater.ow_http import OWHttp
 from openwater.plugins.gpio import OWGpio
-from openwater.program import BaseProgram, ProgramManager
+from openwater.program import ProgramManager
 from openwater.scheduler import Scheduler
-from openwater.utils.decorator import is_blocking, is_nonblocking, nonblocking
+from openwater.utils.decorator import is_nonblocking, nonblocking
 from openwater.utils.plugin import OWPlugin, PluginRegistry
-from openwater.zone import ZoneController, ZoneManager
+from openwater.zone import ZoneManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -136,7 +136,7 @@ class EventBus:
             _LOGGER.debug("Unable to remove listener")
 
     def fire_ext(self, event: str, data: Optional[Dict] = None) -> None:
-        self.ow.event_loop.call_soon_threadsafe(self.fire, data)
+        self.ow.event_loop.call_soon_threadsafe(self.fire, event, data)
 
     def fire(self, event: str, data: Optional[Dict] = None) -> None:
         """ Fire event (call all listeners) """
@@ -146,7 +146,7 @@ class EventBus:
         evt = Event(self.ow, event, data, datetime.now())
 
         for listener in self._listeners.get(event):
-            self.ow.add_job(listener, event)
+            self.ow.add_job(listener, evt)
 
 
 class Timer:
