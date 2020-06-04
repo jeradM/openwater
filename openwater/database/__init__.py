@@ -6,7 +6,19 @@ from typing import TYPE_CHECKING
 from alembic import command
 from alembic.config import Config
 from databases import Database
+from sqlalchemy import select
 
+from openwater.database.data import (
+    get_zone_data,
+    get_master_data,
+    get_master_zone_join_data,
+    get_program_data,
+    get_program_step_data,
+    get_program_action_data,
+    get_action_zones_data,
+    get_schedules_data,
+    get_zone_run_data,
+)
 from openwater.database.model import (
     zone,
     master_zone_join,
@@ -14,6 +26,10 @@ from openwater.database.model import (
     program,
     program_run,
     zone_run,
+    program_step,
+    program_action,
+    program_action_zones,
+    schedule,
 )
 
 if TYPE_CHECKING:
@@ -53,40 +69,30 @@ async def populate_db(ow: "OpenWater"):
 
     tx = await conn.transaction()
 
-    await conn.execute(zone.delete())
-    await conn.execute(zone_run.delete())
-    await conn.execute(master_zone_join.delete())
-    await conn.execute(plugin_config.delete())
-    await conn.execute(program.delete())
-    await conn.execute(program_run.delete())
+    for t in [
+        plugin_config,
+        master_zone_join,
+        program_action_zones,
+        program_action,
+        program_step,
+        program_run,
+        schedule,
+        program,
+        zone_run,
+        zone,
+    ]:
+        await conn.execute(t.delete())
 
     try:
-        query = zone.insert()
-        values = {
-            "name": "Master Zone 1",
-            "zone_type": "SHIFT_REGISTER",
-            "is_master": True,
-            "attrs": {"sr_idx": 0},
-        }
-        result = await conn.execute(query=query, values=values)
-
-        query = zone.insert()
-        for i in range(1, 8):
-            values = {
-                "name": "Test Zone {}".format(i),
-                "zone_type": "SHIFT_REGISTER",
-                "attrs": {
-                    "sr_idx": i,
-                    "soil_type": "CLAY",
-                    "precip_rate": 0.2 + (i / 10),
-                },
-            }
-            result = await conn.execute(query=query, values=values)
-
-        query = master_zone_join.insert()
-        for i in range(2, 5):
-            values = {"zone_id": i, "master_zone_id": 1}
-            await conn.execute(query=query, values=values)
+        await conn.execute(zone.insert(), get_master_data())
+        await conn.execute_many(zone.insert(), get_zone_data())
+        await conn.execute_many(zone_run.insert(), get_zone_run_data())
+        await conn.execute_many(master_zone_join.insert(), get_master_zone_join_data())
+        await conn.execute_many(program.insert(), get_program_data())
+        await conn.execute_many(program_step.insert(), get_program_step_data())
+        await conn.execute_many(program_action.insert(), get_program_action_data())
+        await conn.execute_many(program_action_zones.insert(), get_action_zones_data())
+        await conn.execute_many(schedule.insert(), get_schedules_data())
 
         query = plugin_config.insert()
         values = {
@@ -101,10 +107,22 @@ async def populate_db(ow: "OpenWater"):
             },
         }
         await conn.execute(query=query, values=values)
-    except Exception:
+    except Exception as e:
+        print(e)
         await tx.rollback()
     else:
         await tx.commit()
+
+
+async def test_db(ow: "OpenWater"):
+    conn = ow.db.connection
+    query = select([program, program_step, program_action]).select_from(
+        program.outerjoin(program_step).outerjoin(program_action)
+    )
+    print(query)
+    rows = await conn.fetch_all(query)
+    for row in rows:
+        print(row)
 
 
 class OWDatabase:

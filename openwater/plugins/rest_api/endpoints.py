@@ -1,11 +1,11 @@
 from typing import TYPE_CHECKING
 
+from starlette import schemas
 from starlette.endpoints import HTTPEndpoint
 from starlette.responses import JSONResponse
-from starlette import schemas
 
 from openwater.core import OpenWater
-from openwater.plugins.rest_api.zone import register_zone_endpoints
+from openwater.plugins.rest_api import program, zone, schedule
 from openwater.utils import plugin
 
 if TYPE_CHECKING:
@@ -18,7 +18,9 @@ schema = schemas.SchemaGenerator(
 
 def init_endpoints(ow: OpenWater):
     ow.http.register_endpoint(Plugins)
-    register_zone_endpoints(ow.http.register_endpoint, ow.http.register_route)
+    zone.register_endpoints(ow.http.register_endpoint, ow.http.register_route)
+    program.register_endpoints(ow.http.register_endpoint, ow.http.register_route)
+    schedule.register_endpoints(ow.http.register_endpoint, ow.http.register_route)
     ow.http.register_route(
         openapi_schema, "/api/schema", methods=["GET"], include_in_schema=False
     )

@@ -1,13 +1,15 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Collection
 
 from openwater.database import model
 from openwater.errors import OWError
+from openwater.program.model import ProgramSchedule
 
 if TYPE_CHECKING:
     from openwater.core import OpenWater
 
 
 async def load_programs(ow: "OpenWater"):
+    print("load programs")
     if not ow.db:
         raise OWError("OpenWater database not initialized")
 
@@ -19,8 +21,8 @@ async def load_programs(ow: "OpenWater"):
         )
         if program_type is None:
             continue
-        z = program_type.create(ow, program)
-        ow.programs.store.add_zone(z)
+        p = program_type.create(ow, program)
+        ow.programs.store.add_program(p)
 
 
 async def insert_program(ow: "OpenWater", data: dict) -> int:
@@ -38,3 +40,12 @@ async def delete_program(ow: "OpenWater", id_: int):
     conn = ow.db.connection
     query = model.program.delete().where(model.program.c.id == id_)
     await conn.execute(query=query)
+
+
+async def get_program_schedules(
+    ow: "OpenWater", program_id: int
+) -> Collection[ProgramSchedule]:
+    conn = ow.db.connection
+    query = model.schedule.select().where(model.schedule.c.program_id == program_id)
+    rows = await conn.fetch_all(query)
+    return [ProgramSchedule(**(dict(row))) for row in rows]

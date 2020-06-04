@@ -8,6 +8,7 @@ from starlette.endpoints import WebSocketEndpoint
 from starlette.websockets import WebSocket
 
 from openwater.constants import EVENT_ZONE_ADDED, EVENT_ZONE_UPDATED
+from openwater.plugins.rest_api.helpers import ToDictJSONEncoder
 from openwater.plugins.websocket.handlers import setup_handlers
 from openwater.plugins.websocket.response import ZoneResponse, ZonesResponse
 from openwater.utils.decorator import nonblocking
@@ -58,14 +59,16 @@ class WebSocketApi:
 
     @nonblocking
     def send(self, type: str, data: Any, connection: WebSocket = None):
-        if not self.clients:
+        if not self.clients and not connection:
             return
         msg = {"type": type, "data": data}
+        text = json.dumps(msg, cls=ToDictJSONEncoder)
+        ws_msg = {"type": "websocket.send", "text": text}
         if connection:
-            self._ow.add_job(connection.send_json, msg)
+            self._ow.add_job(connection.send, ws_msg)
         else:
             for client in self.clients:
-                self._ow.add_job(client.send_json, msg)
+                self._ow.add_job(client.send, ws_msg)
 
     def add_client(self, ws: WebSocket):
         self.clients.append(ws)
@@ -78,11 +81,12 @@ class Socket(WebSocketEndpoint):
     path = "/ws"
 
     async def on_connect(self, websocket: WebSocket) -> None:
-        ow: "OpenWater" = websocket.app.ow
         await websocket.accept()
-        zones = [zone.to_dict() for zone in ow.zones.store.zones]
-        await websocket.send_json(ZonesResponse(zones).to_dict())
-        ws: WebSocketApi = websocket.app.ow.data[DATA_WEBSOCKET]
+        ow: "OpenWater" = websocket.app.ow
+        ws: WebSocketApi = ow.data[DATA_WEBSOCKET]
+        # websocket.send_json(ZonesResponse([z.to_dict() for z in ow.zones.store.zones]))
+        ws.send("ZONES", ow.zones.store.zones, websocket)
+        ws.send("PROGRAMS", ow.programs.store.programs, websocket)
         ws.add_client(websocket)
 
     async def on_disconnect(self, websocket: WebSocket, close_code: int) -> None:

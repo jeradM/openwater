@@ -4,7 +4,7 @@ from openwater.constants import EVENT_ZONE_CHANGED, EVENT_ZONE_DELETED
 from openwater.errors import ZoneException, ZoneValidationException
 from openwater.zone.helpers import insert_zone, update_zone, delete_zone
 from openwater.zone.model import BaseZone
-from openwater.zone.validation import validate_zone
+from openwater.zone.validation import validate_zone, validate_attrs
 
 if TYPE_CHECKING:
     from openwater.core import OpenWater
@@ -45,15 +45,15 @@ class ZoneStore:
         if errors:
             raise ZoneValidationException("Zone validation failed", errors)
         zone_type = self._registry.get_zone_for_type(data["zone_type"])
-        errors = validate_zone(zone_type, data)
-        if errors:
+        errors = {"attrs": validate_attrs(zone_type.cls, data["attrs"])}
+        if errors["attrs"]:
             raise ZoneValidationException("Zone attribute validation failed", errors)
         id_ = await insert_zone(self._ow, data)
         zone = zone_type.create(self._ow, data)
         zone.id = id_
         self.zones_[zone.id] = zone
 
-        self._ow.bus.fire(EVENT_ZONE_CHANGED, zone.to_dict())
+        self._ow.bus.fire(EVENT_ZONE_CHANGED, zone)
         return zone
 
     async def update_zone(self, data: Dict) -> BaseZone:
@@ -63,15 +63,17 @@ class ZoneStore:
             raise ZoneValidationException("Zone validation failed", errors)
 
         zone_type = self._registry.get_zone_for_type(data["zone_type"])
-        errors = validate_zone(zone_type.cls, data)
+        errors = validate_attrs(zone_type.cls, data["attrs"])
         if errors:
             raise ZoneValidationException("Zone validation failed", errors)
 
         await update_zone(self._ow, data)
         zone = zone_type.create(self._ow, data)
+        zone_ = self.get_zone(data["id"])
+        zone.last_run = zone_.last_run
         self.zones_[zone.id] = zone
 
-        self._ow.bus.fire(EVENT_ZONE_CHANGED, zone.to_dict())
+        self._ow.bus.fire(EVENT_ZONE_CHANGED, zone)
         return zone
 
     async def delete_zone(self, zone_id: int) -> int:

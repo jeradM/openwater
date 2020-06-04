@@ -1,17 +1,12 @@
-import json
 import logging
 import sys
-from json import JSONEncoder
+from typing import TYPE_CHECKING, Callable
 
 from starlette.endpoints import HTTPEndpoint
-from typing import TYPE_CHECKING, Callable, Any
-
 from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
 
 from openwater.errors import ZoneException, ZoneValidationException
-from openwater.utils.decorator import nonblocking
-from openwater.zone.model import BaseZone
+from openwater.plugins.rest_api.helpers import ToDictJSONResponse, respond
 
 if TYPE_CHECKING:
     from openwater.core import OpenWater
@@ -19,16 +14,11 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-def register_zone_endpoints(endpoint: Callable, route: Callable):
+def register_endpoints(endpoint: Callable, route: Callable):
     endpoint(Zone)
     route(create_zone, "/api/zones", methods=["POST"])
     route(get_zones, "/api/zones", methods=["GET"])
     route(zone_cmd, "/api/zones/{zone_id:int}/{cmd:str}", methods=["POST"])
-
-
-@nonblocking
-def respond(*, data=None, status_code=200):
-    return JSONResponse(content=data, status_code=status_code)
 
 
 class Zone(HTTPEndpoint):
@@ -50,7 +40,7 @@ class Zone(HTTPEndpoint):
         """
         ow: "OpenWater" = request.app.ow
         zone = ow.zones.store.get_zone(request.path_params["zone_id"])
-        return ZoneJSONResponse(zone)
+        return respond(zone)
 
     async def put(self, request):
         """Update an existing zone"""
@@ -60,15 +50,14 @@ class Zone(HTTPEndpoint):
             zone = await ow.zones.store.update_zone(data)
         except ZoneValidationException as e:
             _LOGGER.error("Zone update failed validation")
-            return JSONResponse(
-                {"errors": e.errors, "msg": "Invalid zone data"}, status_code=400,
-            )
-        return JSONResponse(zone.to_dict())
+            return respond({"errors": e.errors, "msg": "Invalid zone data"}, 400)
+        return respond(zone)
 
     async def delete(self, request):
         ow: "OpenWater" = request.app.ow
-        await ow.zones.store.delete_zone(request.path_params["zone_id"])
-        return JSONResponse(status_code=204)
+        res = await ow.zones.store.delete_zone(request.path_params["zone_id"])
+        sc = 204 if res else 400
+        return respond(status_code=sc)
 
 
 async def get_zones(request):
@@ -79,7 +68,7 @@ async def get_zones(request):
         description: A list of zones.
     """
     ow: "OpenWater" = request.app.ow
-    return ZoneJSONResponse(list(ow.zones.store.zones))
+    return respond(ow.zones.store.zones)
 
 
 async def create_zone(request: Request):
@@ -97,10 +86,10 @@ async def create_zone(request: Request):
         zone = await ow.zones.store.create_zone(data)
     except ZoneValidationException as e:
         _LOGGER.error("Create zone failed validation")
-        return JSONResponse(
+        return ToDictJSONResponse(
             {"errors": e.errors, "msg": "Invalid zone data"}, status_code=400,
         )
-    return ZoneJSONResponse(zone)
+    return respond(zone)
 
 
 async def zone_cmd(request: Request):
@@ -135,26 +124,7 @@ async def zone_cmd(request: Request):
             await ow.zones.controller.close_zone(zone_id)
         else:
             raise ZoneException("Unknown zone command: {}".format(cmd))
-        return JSONResponse(status_code=200)
-    except Exception as e:
-        print(sys.exc_info())
-        return JSONResponse(status_code=500)
-
-
-class ZoneEncoder(JSONEncoder):
-    def default(self, o: Any) -> Any:
-        if isinstance(o, BaseZone):
-            return o.to_dict()
-        return json.JSONEncoder.default(self, o)
-
-
-class ZoneJSONResponse(JSONResponse):
-    def render(self, content: Any) -> bytes:
-        return json.dumps(
-            content,
-            ensure_ascii=False,
-            allow_nan=False,
-            indent=None,
-            separators=(",", ":"),
-            cls=ZoneEncoder,
-        ).encode("utf-8")
+        return respond(status_code=200)
+    except ZoneException as e:
+        _LOGGER.error(e)
+        return respond(status_code=500)

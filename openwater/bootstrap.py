@@ -2,10 +2,11 @@ from openwater.config import ensure_config_file, load_config_file
 from openwater.core import OpenWater
 from openwater.database import OWDatabase
 from openwater.ow_http import setup_http
+from openwater.program.helpers import load_programs
 from openwater.utils import plugin
 from openwater.zone.helpers import load_zones
 
-CORE_PLUGINS = ["rest_api", "gpio", "shift_register", "websocket"]
+CORE_PLUGINS = ["rest_api", "gpio", "shift_register", "websocket", "basic_program"]
 
 
 async def setup_ow() -> OpenWater:
@@ -34,4 +35,5 @@ async def setup(ow: OpenWater) -> int:
     await ensure_config_file(ow)
     await plugin.load_plugins(CORE_PLUGINS, ow)
     await load_zones(ow)
+    await load_programs(ow)
     return await ow.start()

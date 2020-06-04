@@ -1,0 +1,6 @@
+id: basic_program
+name: Basic Program
+description: OpenIrrigation standard, sequential program
+depends: []
+core: true
+user: false

@@ -4,6 +4,8 @@ import asyncio
 import os
 import sys
 
+from openwater.database import test_db
+
 
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -25,6 +27,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument(
         "--populate", action="store_true", help="Populate database with test data"
     )
+    parser.add_argument("--test", action="store_true", help="Run DB Test")
     parser.add_argument(
         "--mock-gpio", action="store_true", help="Mock RPi.GPIO module for development"
     )
@@ -38,14 +41,17 @@ async def run(args: argparse.Namespace) -> int:
 
     ow = await bootstrap.setup_ow()
     if args.upgrade_db:
-        ow.add_job(migrate_db, ow, args.revision)
+        await ow.add_job(migrate_db, ow, args.revision)
         return 0
     if args.create_revision:
         msg = args.create_revision
-        ow.add_job(generate_revision, ow, msg)
+        await ow.add_job(generate_revision, ow, msg)
         return 0
     if args.populate:
         await populate_db(ow)
+        return 0
+    if args.test:
+        await test_db(ow)
         return 0
     if args.mock_gpio:
         import fake_rpi

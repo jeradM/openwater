@@ -91,12 +91,12 @@ class OpenWater:
 
 class Event:
     def __init__(
-        self, ow: OpenWater, event_type: str, data: Optional[Dict], t: datetime
+        self, ow: OpenWater, event_type: str, dt: datetime, data: Optional[Any] = None
     ):
         self.ow = ow
         self.event_type = event_type
+        self.fired_at = dt
         self.data = data
-        self.fired_at = t
 
 
 class EventBus:
@@ -135,15 +135,15 @@ class EventBus:
         except (KeyError, ValueError):
             _LOGGER.debug("Unable to remove listener")
 
-    def fire_ext(self, event: str, data: Optional[Dict] = None) -> None:
+    def fire_ext(self, event: str, data: Optional[Any] = None) -> None:
         self.ow.event_loop.call_soon_threadsafe(self.fire, event, data)
 
-    def fire(self, event: str, data: Optional[Dict] = None) -> None:
+    def fire(self, event: str, data: Optional[Any] = None) -> None:
         """ Fire event (call all listeners) """
         if event not in self._listeners:
             return
 
-        evt = Event(self.ow, event, data, datetime.now())
+        evt = Event(self.ow, event, datetime.now(), data)
 
         for listener in self._listeners.get(event):
             self.ow.add_job(listener, evt)

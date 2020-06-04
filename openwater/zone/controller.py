@@ -23,7 +23,7 @@ class ZoneController:
             _LOGGER.error("Requested to open a non-existent zone: {}".format(zone_id))
             return
         await target.open()
-        self._ow.bus.fire(EVENT_ZONE_CHANGED, target.to_dict())
+        self._ow.bus.fire(EVENT_ZONE_CHANGED, target)
 
     async def close_zone(self, zone_id: int):
         target = self._store.get_zone(zone_id)
@@ -31,7 +31,7 @@ class ZoneController:
             _LOGGER.error("Requested to close a non-existent zone: {}".format(zone_id))
             return
         await target.close()
-        self._ow.bus.fire(EVENT_ZONE_CHANGED, target.to_dict())
+        self._ow.bus.fire(EVENT_ZONE_CHANGED, target)
 
     async def close_zones(self, zone_ids: Collection[int]):
         for zone_id in zone_ids:
