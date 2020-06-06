@@ -148,7 +148,7 @@ class ShiftRegister:
         if self.active_high:
             self._reg_mask |= 1 << reg
         else:
-            self._reg_mask &= 0 << reg
+            self._reg_mask ^= 1 << reg
 
         self.write_registers()
 
@@ -163,7 +163,7 @@ class ShiftRegister:
         if self.active_high:
             self._reg_mask |= 1 << reg
         else:
-            self._reg_mask &= 0 << reg
+            self._reg_mask ^= 1 << reg
 
         await self.async_write_registers()
 
@@ -176,7 +176,7 @@ class ShiftRegister:
             )
 
         if self.active_high:
-            self._reg_mask &= 0 << reg
+            self._reg_mask ^= 1 << reg
         else:
             self._reg_mask |= 1 << reg
 
@@ -191,7 +191,7 @@ class ShiftRegister:
             )
 
         if self.active_high:
-            self._reg_mask &= 0 << reg
+            self._reg_mask ^= 1 << reg
         else:
             self._reg_mask |= 1 << reg
 

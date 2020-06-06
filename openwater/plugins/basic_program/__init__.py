@@ -23,5 +23,4 @@ def create_program(ow: "OpenWater", data: dict) -> "BasicProgram":
 
 
 class BasicProgram(BaseProgram):
-    def should_run(self, dt: datetime) -> bool:
-        return False
+    pass

@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Dict
 
-from openwater.constants import EVENT_ZONE_CHANGED, EVENT_ZONE_DELETED
+from openwater.constants import EVENT_ZONE_STATE
 from openwater.errors import ZoneException, ZoneValidationException
 from openwater.zone.helpers import insert_zone, update_zone, delete_zone
 from openwater.zone.model import BaseZone
@@ -53,7 +53,7 @@ class ZoneStore:
         zone.id = id_
         self.zones_[zone.id] = zone
 
-        self._ow.bus.fire(EVENT_ZONE_CHANGED, zone)
+        self._ow.bus.fire(EVENT_ZONE_STATE, zone)
         return zone
 
     async def update_zone(self, data: Dict) -> BaseZone:
@@ -73,12 +73,12 @@ class ZoneStore:
         zone.last_run = zone_.last_run
         self.zones_[zone.id] = zone
 
-        self._ow.bus.fire(EVENT_ZONE_CHANGED, zone)
+        self._ow.bus.fire(EVENT_ZONE_STATE, zone)
         return zone
 
     async def delete_zone(self, zone_id: int) -> int:
         """Delete a zone from the store and remove database record"""
         result = await delete_zone(self._ow, zone_id)
         self.remove_zone(self.get_zone(zone_id))
-        self._ow.bus.fire(EVENT_ZONE_DELETED, {"zone_id": zone_id})
+        self._ow.bus.fire(EVENT_ZONE_STATE, {"zone_id": zone_id})
         return result

@@ -10,7 +10,10 @@ from starlette.websockets import WebSocket
 from openwater.constants import EVENT_ZONE_ADDED, EVENT_ZONE_UPDATED
 from openwater.plugins.rest_api.helpers import ToDictJSONEncoder
 from openwater.plugins.websocket.handlers import setup_handlers
-from openwater.plugins.websocket.response import ZoneResponse, ZonesResponse
+from openwater.plugins.websocket.response import (
+    ZonesResponse,
+    WebsocketResponse,
+)
 from openwater.utils.decorator import nonblocking
 
 if TYPE_CHECKING:
@@ -43,19 +46,30 @@ class WebSocketApi:
     def __init__(self, ow: "OpenWater"):
         self._ow: "OpenWater" = ow
         self.clients: List[WebSocket] = []
-        self.setup_listeners()
+        # self.setup_listeners()
 
-    def setup_listeners(self) -> None:
-        self._ow.bus.listen(EVENT_ZONE_ADDED, self._send_zone)
-        self._ow.bus.listen(EVENT_ZONE_UPDATED, self._send_zone)
+    # def setup_listeners(self) -> None:
+    #     self._ow.bus.listen(EVENT_ZONE_ADDED, self._send_zone)
+    #     self._ow.bus.listen(EVENT_ZONE_UPDATED, self._send_zone)
+    #
+    # async def _send_zone(self, event) -> None:
+    #     if not self.clients:
+    #         return
+    #     zone = event.data
+    #     resp = ZoneResponse(zone)
+    #     for client in self.clients:
+    #         await client.send_json(resp.to_dict())
 
-    async def _send_zone(self, event) -> None:
-        if not self.clients:
+    def respond(self, resp: WebsocketResponse, connection: WebSocket = None):
+        if not self.clients and not connection:
             return
-        zone = event.data
-        resp = ZoneResponse(zone)
-        for client in self.clients:
-            await client.send_json(resp.to_dict())
+        text = json.dumps(resp, cls=ToDictJSONEncoder)
+        ws_msg = {"type": "websocket.send", "text": text}
+        if connection:
+            self._ow.add_job(connection.send, ws_msg)
+        else:
+            for client in self.clients:
+                self._ow.add_job(client.send, ws_msg)
 
     @nonblocking
     def send(self, type: str, data: Any, connection: WebSocket = None):
@@ -84,9 +98,10 @@ class Socket(WebSocketEndpoint):
         await websocket.accept()
         ow: "OpenWater" = websocket.app.ow
         ws: WebSocketApi = ow.data[DATA_WEBSOCKET]
+        ws.send("state.all", ow, websocket)
         # websocket.send_json(ZonesResponse([z.to_dict() for z in ow.zones.store.zones]))
-        ws.send("ZONES", ow.zones.store.zones, websocket)
-        ws.send("PROGRAMS", ow.programs.store.programs, websocket)
+        # ws.send("ZONES", ow.zones.store.zones, websocket)
+        # ws.send("PROGRAMS", ow.programs.store.programs, websocket)
         ws.add_client(websocket)
 
     async def on_disconnect(self, websocket: WebSocket, close_code: int) -> None:

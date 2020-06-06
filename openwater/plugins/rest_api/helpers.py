@@ -17,6 +17,8 @@ class ToDictJSONEncoder(json.JSONEncoder):
         try:
             if isinstance(o, list):
                 return [i.to_dict for i in o]
+            if isinstance(o, datetime.datetime):
+                return o.isoformat()
             if isinstance(o, datetime.date):
                 return str(o)
             return o.to_dict()

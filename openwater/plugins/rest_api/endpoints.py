@@ -6,6 +6,7 @@ from starlette.responses import JSONResponse
 
 from openwater.core import OpenWater
 from openwater.plugins.rest_api import program, zone, schedule
+from openwater.plugins.rest_api.helpers import ToDictJSONResponse, respond
 from openwater.utils import plugin
 
 if TYPE_CHECKING:
@@ -24,6 +25,11 @@ def init_endpoints(ow: OpenWater):
     ow.http.register_route(
         openapi_schema, "/api/schema", methods=["GET"], include_in_schema=False
     )
+    ow.http.register_route(core, "/api/core", methods=["GET"])
+
+
+async def core(request) -> ToDictJSONResponse:
+    return respond(request.app.ow)
 
 
 async def openapi_schema(request):

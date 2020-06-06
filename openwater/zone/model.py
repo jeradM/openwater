@@ -18,7 +18,7 @@ class ZoneRun:
         return {
             "id": self.id,
             "zone_id": self.zone_id,
-            "start": str(self.start),
+            "start": self.start,
             "duration": self.duration,
         }
 

@@ -12,7 +12,7 @@ class WebsocketResponse:
 
 class ZonesResponse(WebsocketResponse):
     def __init__(self, zones):
-        super().__init__(type="zones")
+        super().__init__(type="state.zones")
         self.zones = zones
 
     @property
@@ -20,11 +20,11 @@ class ZonesResponse(WebsocketResponse):
         return {"zones": self.zones}
 
 
-class ZoneResponse(WebsocketResponse):
-    def __init__(self, zone):
-        super().__init__(type="zone")
-        self.zone = zone
+class ProgramsResponse(WebsocketResponse):
+    def __init__(self, programs):
+        super().__init__(type="state.programs")
+        self.programs = programs
 
     @property
     def data(self):
-        return {"zone": self.zone}
+        return {"programs": self.programs}

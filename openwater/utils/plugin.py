@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, List, Dict
 
 import yaml
 
-from openwater.database import plugin_config
+from openwater.database.model import plugin_config
 from openwater.errors import PluginException
 
 if TYPE_CHECKING:

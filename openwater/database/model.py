@@ -1,16 +1,16 @@
+from typing import Union, TypeVar
+
 from sqlalchemy import (
     Column,
     Integer,
     String,
     Boolean,
-    Numeric,
     ForeignKey,
     DateTime,
     Table,
     JSON,
     MetaData,
     UniqueConstraint,
-    Time,
     Date,
 )
 
@@ -40,7 +40,9 @@ zone_run = Table(
     "zone_run",
     metadata,
     Column("id", Integer, primary_key=True),
-    Column("zone_id", Integer, ForeignKey("zone.id"), nullable=False),
+    Column(
+        "zone_id", Integer, ForeignKey("zone.id", ondelete="CASCADE"), nullable=False
+    ),
     Column("start", DateTime),
     Column("duration", Integer),
 )
@@ -48,8 +50,8 @@ zone_run = Table(
 master_zone_join = Table(
     "master_zones",
     metadata,
-    Column("zone_id", Integer, ForeignKey("zone.id")),
-    Column("master_zone_id", Integer, ForeignKey("zone.id")),
+    Column("zone_id", Integer, ForeignKey("zone.id", ondelete="CASCADE")),
+    Column("master_zone_id", Integer, ForeignKey("zone.id", ondelete="CASCADE")),
     UniqueConstraint("zone_id", "master_zone_id"),
 )
 
@@ -66,8 +68,18 @@ program_run = Table(
     "program_run",
     metadata,
     Column("id", Integer, primary_key=True),
-    Column("program_id", Integer, ForeignKey("program.id"), nullable=False),
-    Column("schedule_id", Integer, ForeignKey("schedule.id"), nullable=False),
+    Column(
+        "program_id",
+        Integer,
+        ForeignKey("program.id", ondelete="SET NULL"),
+        nullable=False,
+    ),
+    Column(
+        "schedule_id",
+        Integer,
+        ForeignKey("schedule.id", ondelete="SET NULL"),
+        nullable=False,
+    ),
     Column("start", DateTime),
     Column("end", DateTime),
 )
@@ -76,7 +88,12 @@ program_step = Table(
     "program_step",
     metadata,
     Column("id", Integer, primary_key=True),
-    Column("program_id", Integer, ForeignKey("program.id"), nullable=False),
+    Column(
+        "program_id",
+        Integer,
+        ForeignKey("program.id", ondelete="CASCADE"),
+        nullable=False,
+    ),
     Column("order", Integer, nullable=False),
 )
 
@@ -84,7 +101,12 @@ program_action = Table(
     "program_action",
     metadata,
     Column("id", Integer, primary_key=True),
-    Column("step_id", Integer, ForeignKey("program_step.id"), nullable=False),
+    Column(
+        "step_id",
+        Integer,
+        ForeignKey("program_step.id", ondelete="CASCADE"),
+        nullable=False,
+    ),
     Column("action_type", String(10), nullable=False),
     Column("duration", Integer, nullable=False),
 )
@@ -92,8 +114,15 @@ program_action = Table(
 program_action_zones = Table(
     "program_action_zones",
     metadata,
-    Column("action_id", Integer, ForeignKey("program_action.id"), nullable=False),
-    Column("zone_id", Integer, ForeignKey("zone.id"), nullable=False),
+    Column(
+        "action_id",
+        Integer,
+        ForeignKey("program_action.id", ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column(
+        "zone_id", Integer, ForeignKey("zone.id", ondelete="CASCADE"), nullable=False
+    ),
     UniqueConstraint("action_id", "zone_id"),
 )
 
@@ -110,7 +139,12 @@ schedule = Table(
     "schedule",
     metadata,
     Column("id", Integer, primary_key=True),
-    Column("program_id", Integer, ForeignKey("program.id"), nullable=False),
+    Column(
+        "program_id",
+        Integer,
+        ForeignKey("program.id", ondelete="CASCADE"),
+        nullable=False,
+    ),
     Column("enabled", Boolean(name="enabled_bool"), nullable=False, default=False),
     Column("at", Integer, nullable=False),
     Column("day_interval", Integer),
@@ -120,3 +154,5 @@ schedule = Table(
     Column("on_day", Date),
     Column("start_day", Date),
 )
+
+DBModel = Table

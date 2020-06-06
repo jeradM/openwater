@@ -1,8 +1,8 @@
 """'init_schema_v1'
 
-Revision ID: 5e5a7e0454b3
+Revision ID: 40193224ef2a
 Revises: 
-Create Date: 2020-06-03 20:01:58.414917
+Create Date: 2020-06-04 20:36:39.650432
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = "5e5a7e0454b3"
+revision = "40193224ef2a"
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -51,9 +51,13 @@ def upgrade():
             ["master_zone_id"],
             ["zone.id"],
             name=op.f("fk_master_zones_master_zone_id_zone"),
+            ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
-            ["zone_id"], ["zone.id"], name=op.f("fk_master_zones_zone_id_zone")
+            ["zone_id"],
+            ["zone.id"],
+            name=op.f("fk_master_zones_zone_id_zone"),
+            ondelete="CASCADE",
         ),
         sa.UniqueConstraint(
             "zone_id", "master_zone_id", name=op.f("uq_master_zones_zone_id")
@@ -68,6 +72,7 @@ def upgrade():
             ["program_id"],
             ["program.id"],
             name=op.f("fk_program_step_program_id_program"),
+            ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_program_step")),
     )
@@ -84,7 +89,10 @@ def upgrade():
         sa.Column("on_day", sa.Date(), nullable=True),
         sa.Column("start_day", sa.Date(), nullable=True),
         sa.ForeignKeyConstraint(
-            ["program_id"], ["program.id"], name=op.f("fk_schedule_program_id_program")
+            ["program_id"],
+            ["program.id"],
+            name=op.f("fk_schedule_program_id_program"),
+            ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_schedule")),
     )
@@ -95,7 +103,10 @@ def upgrade():
         sa.Column("start", sa.DateTime(), nullable=True),
         sa.Column("duration", sa.Integer(), nullable=True),
         sa.ForeignKeyConstraint(
-            ["zone_id"], ["zone.id"], name=op.f("fk_zone_run_zone_id_zone")
+            ["zone_id"],
+            ["zone.id"],
+            name=op.f("fk_zone_run_zone_id_zone"),
+            ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_zone_run")),
     )
@@ -109,6 +120,7 @@ def upgrade():
             ["step_id"],
             ["program_step.id"],
             name=op.f("fk_program_action_step_id_program_step"),
+            ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_program_action")),
     )
@@ -123,11 +135,13 @@ def upgrade():
             ["program_id"],
             ["program.id"],
             name=op.f("fk_program_run_program_id_program"),
+            ondelete="SET NULL",
         ),
         sa.ForeignKeyConstraint(
             ["schedule_id"],
             ["schedule.id"],
             name=op.f("fk_program_run_schedule_id_schedule"),
+            ondelete="SET NULL",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_program_run")),
     )
@@ -139,9 +153,13 @@ def upgrade():
             ["action_id"],
             ["program_action.id"],
             name=op.f("fk_program_action_zones_action_id_program_action"),
+            ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
-            ["zone_id"], ["zone.id"], name=op.f("fk_program_action_zones_zone_id_zone")
+            ["zone_id"],
+            ["zone.id"],
+            name=op.f("fk_program_action_zones_zone_id_zone"),
+            ondelete="CASCADE",
         ),
         sa.UniqueConstraint(
             "action_id", "zone_id", name=op.f("uq_program_action_zones_action_id")

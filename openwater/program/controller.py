@@ -21,7 +21,7 @@ class ProgramController:
 
     async def queue_program(self, program: BaseProgram):
         self.current_program = program
-        self.steps = program.get_steps()
+        self.steps = program.steps
 
     async def start(self):
         self.remove_listener = self.ow.bus.listen(
@@ -39,7 +39,7 @@ class ProgramController:
     async def check_progress(self):
         current_step = self.steps[self.current_step_idx]
 
-        for step in current_step.steps:
+        for step in current_step.actions:
             if step.running and step.is_complete():
                 await self.ow.zones.controller.close_zone(step.zone_id)
                 step.end()

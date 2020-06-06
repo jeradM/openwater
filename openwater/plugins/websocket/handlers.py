@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
-from openwater.constants import EVENT_ZONE_CHANGED, EVENT_ZONE_DELETED
+from openwater.constants import EVENT_ZONE_STATE
+from openwater.plugins.websocket.response import ZonesResponse
 from openwater.utils.decorator import nonblocking
 
 if TYPE_CHECKING:
@@ -10,14 +11,18 @@ if TYPE_CHECKING:
 
 @nonblocking
 def setup_handlers(ow: "OpenWater", ws: "WebSocketApi"):
-    handler = WSEventHandler(ws)
-    ow.bus.listen(EVENT_ZONE_CHANGED, handler.zone_changed)
-    ow.bus.listen(EVENT_ZONE_DELETED, handler.zone_deleted)
+    handler = WSEventHandler(ow, ws)
+    ow.bus.listen(EVENT_ZONE_STATE, handler.zone_state)
 
 
 class WSEventHandler:
-    def __init__(self, ws: "WebSocketApi"):
+    def __init__(self, ow: "OpenWater", ws: "WebSocketApi"):
+        self._ow = ow
         self.ws = ws
+
+    @nonblocking
+    def zone_state(self, event: "Event"):
+        self.ws.respond(ZonesResponse(self._ow.zones.store.zones))
 
     @nonblocking
     def zone_changed(self, event: "Event"):

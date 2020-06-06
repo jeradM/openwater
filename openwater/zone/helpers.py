@@ -14,7 +14,7 @@ async def load_zones(ow: "OpenWater"):
     if not ow.db:
         raise OWError("OpenWater database not initialized")
 
-    rows = await ow.db.connection.fetch_all(query=zone.select())
+    rows = await ow.db.list(zone)
     for row in rows:
         zone_ = dict(row)
         zone_type = ow.zones.registry.get_zone_for_type(zone_["zone_type"])
@@ -35,19 +35,12 @@ async def load_last_run(ow: "OpenWater", zone_id: int) -> Optional[ZoneRun]:
 
 
 async def insert_zone(ow: "OpenWater", data: dict) -> int:
-    conn = ow.db.connection
-    new_id = await conn.execute(query=zone.insert(), values=data)
-    return new_id
+    return await ow.db.insert(zone, data)
 
 
-async def update_zone(ow: "OpenWater", data: dict):
-    conn = ow.db.connection
-    return await conn.execute(
-        query=zone.update().where(zone.c.id == data["id"]), values=data
-    )
+async def update_zone(ow: "OpenWater", data: dict) -> bool:
+    return await ow.db.update(zone, data)
 
 
-async def delete_zone(ow: "OpenWater", id_: int):
-    conn = ow.db.connection
-    query = zone.delete().where(zone.c.id == id_)
-    return await conn.execute(query=query)
+async def delete_zone(ow: "OpenWater", id_: int) -> bool:
+    return await ow.db.delete(zone, id_)

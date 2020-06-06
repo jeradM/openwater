@@ -27,10 +27,6 @@ class BaseProgram(ABC):
             "is_running": self.is_running,
         }
 
-    @abstractmethod
-    async def should_run(self, now: datetime) -> bool:
-        pass
-
 
 class ProgramAction(ABC):
     """Defines an action to take during a step in a program"""
@@ -87,8 +83,8 @@ class ProgramStep:
     """Represents an individual, serial step in a program which can have multiple zones"""
 
     def __init__(self, id: int, actions: Collection[ProgramAction]):
-        self.id = id
-        self.actions = actions
+        self.id: int = id
+        self.actions: Collection[ProgramAction] = actions
         self.done: bool = False
         self.started_at: Optional[datetime] = None
         self.completed_at: Optional[datetime] = None

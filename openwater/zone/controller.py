@@ -1,7 +1,7 @@
 import logging
 from typing import TYPE_CHECKING, Collection, Dict
 
-from openwater.constants import EVENT_ZONE_CHANGED
+from openwater.constants import EVENT_ZONE_STATE
 from openwater.zone.model import BaseZone
 
 if TYPE_CHECKING:
@@ -23,7 +23,7 @@ class ZoneController:
             _LOGGER.error("Requested to open a non-existent zone: {}".format(zone_id))
             return
         await target.open()
-        self._ow.bus.fire(EVENT_ZONE_CHANGED, target)
+        self._ow.bus.fire(EVENT_ZONE_STATE, target)
 
     async def close_zone(self, zone_id: int):
         target = self._store.get_zone(zone_id)
@@ -31,7 +31,7 @@ class ZoneController:
             _LOGGER.error("Requested to close a non-existent zone: {}".format(zone_id))
             return
         await target.close()
-        self._ow.bus.fire(EVENT_ZONE_CHANGED, target)
+        self._ow.bus.fire(EVENT_ZONE_STATE, target)
 
     async def close_zones(self, zone_ids: Collection[int]):
         for zone_id in zone_ids:

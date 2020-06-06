@@ -47,7 +47,14 @@ class OpenWater:
         self.gpio: Optional["OWGpio"] = None
         self._stopped = None
 
-        self.status = STATUS_STARTING
+        self.status: str = STATUS_STARTING
+
+    def to_dict(self):
+        return {
+            "status": self.status,
+            "zones": self.zones.store.zones,
+            "programs": self.programs.store.programs,
+        }
 
     def add_job_ext(self, c: Union[Callable, Awaitable], *args: Any) -> None:
         self.event_loop.call_soon_threadsafe(c, *args)
