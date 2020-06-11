@@ -4,8 +4,8 @@ import logging
 import signal
 from asyncio import AbstractEventLoop
 from concurrent.futures.thread import ThreadPoolExecutor
-from datetime import datetime
-from typing import List, Callable, Dict, Optional, Union, Any, Awaitable
+from datetime import datetime, timedelta
+from typing import List, Callable, Dict, Optional, Union, Any, Awaitable, Coroutine
 
 from openwater.constants import (
     STATUS_STARTING,
@@ -56,6 +56,12 @@ class OpenWater:
             "programs": self.programs.store.programs,
         }
 
+    def fire_coroutine(self, c: Coroutine) -> None:
+        asyncio.create_task(c)
+
+    def run_coroutine_in(self, c: Coroutine, secs: int) -> None:
+        self.event_loop.call_later(secs, asyncio.create_task, c)
+
     def add_job_ext(self, c: Union[Callable, Awaitable], *args: Any) -> None:
         self.event_loop.call_soon_threadsafe(c, *args)
 
@@ -81,7 +87,7 @@ class OpenWater:
     async def start(self) -> int:
         _LOGGER.info("Starting Open Irrigation")
         self._stopped = asyncio.Event()
-        self.add_job(self.http.run())
+        self.fire_coroutine(self.http.run())
 
         self.status = STATUS_RUNNING
         self.bus.fire(EVENT_APP_STARTED)

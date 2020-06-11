@@ -19,18 +19,12 @@ from openwater.database.data import (
     get_master_zone_join_data,
     get_program_data,
     get_program_step_data,
-    get_program_action_data,
-    get_action_zones_data,
+    get_step_zones_data,
     get_schedules_data,
 )
-from openwater.database.model import (
-    plugin_config,
-    master_zone_join,
-    program_action_zones,
-)
+from openwater.database.model import plugin_config, master_zone_join, program_step_zones
 from openwater.database.model import (
     program,
-    program_action,
     program_run,
     program_step,
     schedule,
@@ -74,9 +68,8 @@ async def populate_db(ow: "OpenWater"):
     for t in [
         plugin_config,
         master_zone_join,
-        program_action_zones,
-        program_action,
         program_step,
+        program_step_zones,
         program_run,
         schedule,
         program,
@@ -92,8 +85,7 @@ async def populate_db(ow: "OpenWater"):
         await conn.execute_many(master_zone_join.insert(), get_master_zone_join_data())
         await conn.execute_many(program.insert(), get_program_data())
         await conn.execute_many(program_step.insert(), get_program_step_data())
-        await conn.execute_many(program_action.insert(), get_program_action_data())
-        await conn.execute_many(program_action_zones.insert(), get_action_zones_data())
+        await conn.execute_many(program_step_zones.insert(), get_step_zones_data())
         await conn.execute_many(schedule.insert(), get_schedules_data())
 
         query = plugin_config.insert()
@@ -118,8 +110,8 @@ async def populate_db(ow: "OpenWater"):
 
 async def test_db(ow: "OpenWater"):
     conn = ow.db.connection
-    query = select([program, program_step, program_action]).select_from(
-        program.outerjoin(program_step).outerjoin(program_action)
+    query = select([program, program_step, program_step]).select_from(
+        program.outerjoin(program_step).outerjoin(program_step)
     )
     print(query)
     rows = await conn.fetch_all(query)

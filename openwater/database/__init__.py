@@ -1,10 +1,15 @@
 import logging
-from typing import List, Optional, Mapping, Any
+from datetime import datetime
+from logging import LogRecord
+from typing import TYPE_CHECKING, List, Optional, Mapping, Any
 
 from databases import Database
 from sqlalchemy import select
 
-from openwater.database.model import DBModel
+from openwater.database.model import DBModel, log_entry
+
+if TYPE_CHECKING:
+    from openwater.core import OpenWater
 
 MIGRATION_CONFIG_FILE = "alembic.ini"
 SCRIPT_DIR_OPT = "script_location"
@@ -14,7 +19,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class OWDatabase:
-    def __init__(self, ow):
+    def __init__(self, ow: "OpenWater"):
         self.ow = ow
         self._database = Database(ow.config.get("db_url"))
 
@@ -96,3 +101,18 @@ class OWDatabase:
     @property
     def connection(self) -> Database:
         return self._database
+
+
+class DatabaseLoggingHandler(logging.Handler):
+    def __init__(self, ow: "OpenWater", level=logging.NOTSET):
+        super().__init__(level=level)
+        self._ow: "OpenWater" = ow
+
+    def emit(self, record: LogRecord) -> None:
+        row = {
+            "timestamp": datetime.fromtimestamp(record.created),
+            "logger": record.name,
+            "level": record.levelname,
+            "msg": record.msg % record.args,
+        }
+        self._ow.add_job(self._ow.db.insert(log_entry, row))

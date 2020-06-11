@@ -6,6 +6,7 @@ except Exception:
     print("Failed to import GPIO module. You probably need superuser privileges (sudo)")
 
 from fake_rpi.RPi import GPIO as gpio
+from fake_rpi import toggle_print
 from typing import TYPE_CHECKING, Optional, Union, Collection
 
 if TYPE_CHECKING:
@@ -15,6 +16,7 @@ DATA_GPIO = "GPIO"
 
 
 def setup_plugin(ow: "OpenWater", config: dict = {}):
+    toggle_print(False)
     ow.add_job(gpio.setmode, gpio.BCM)
     ow.data[DATA_GPIO] = OWGpio(ow)
 

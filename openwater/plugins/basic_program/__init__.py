@@ -23,4 +23,6 @@ def create_program(ow: "OpenWater", data: dict) -> "BasicProgram":
 
 
 class BasicProgram(BaseProgram):
-    pass
+    @staticmethod
+    def program_type() -> str:
+        return "Basic"

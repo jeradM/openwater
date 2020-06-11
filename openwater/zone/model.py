@@ -1,7 +1,6 @@
-from datetime import datetime
-from typing import TYPE_CHECKING, Dict, Any, List, Optional, Collection
-
 from abc import ABC, abstractmethod
+from datetime import datetime
+from typing import TYPE_CHECKING, Dict, Any, List, Optional
 
 if TYPE_CHECKING:
     from openwater.core import OpenWater
@@ -14,13 +13,16 @@ class ZoneRun:
         self.start = start
         self.duration = duration
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {
             "id": self.id,
             "zone_id": self.zone_id,
             "start": self.start,
             "duration": self.duration,
         }
+
+    def to_db(self) -> dict:
+        return self.to_dict()
 
 
 class BaseZone(ABC):
@@ -32,6 +34,8 @@ class BaseZone(ABC):
         zone_type: str,
         is_master: bool,
         attrs: dict,
+        open_offset: int = 0,
+        close_offset: int = 0,
         last_run: Optional[ZoneRun] = None,
     ):
         self._ow = ow
@@ -40,7 +44,10 @@ class BaseZone(ABC):
         self.zone_type = zone_type
         self.is_master = is_master
         self.attrs = attrs
+        self.open_offset = open_offset
+        self.close_offset = close_offset
         self.last_run = last_run
+        self.master_zones: Optional[List[BaseZone]] = None
 
     @classmethod
     def of(cls, ow: "OpenWater", data: Dict[str, Any]):
@@ -62,6 +69,17 @@ class BaseZone(ABC):
             "open": self.is_open(),
             "attrs": dict(self.attrs, **self.extra_attrs),
             "last_run": self.last_run,
+            "master_zones": self.master_zones,
+        }
+
+    def to_db(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "zone_type": self.zone_type,
+            "is_master": self.is_master,
+            "open": self.is_open(),
+            "attrs": dict(self.attrs, **self.extra_attrs),
         }
 
     @abstractmethod

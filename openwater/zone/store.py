@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Optional
 
 from openwater.constants import EVENT_ZONE_STATE
 from openwater.errors import ZoneException, ZoneValidationException
@@ -21,7 +21,7 @@ class ZoneStore:
     def zones(self):
         return list(self.zones_.values())
 
-    def get_zone(self, id_: int):
+    def get_zone(self, id_: int) -> Optional[BaseZone]:
         """Get a zone from the store by id"""
         zone = self.zones_.get(id_, None)
         return zone

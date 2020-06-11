@@ -25,6 +25,7 @@ class Scheduler:
         schedules = self.ow.programs.store.schedules
         run_schedule = None
         for schedule in schedules:
+            _LOGGER.debug("Checking schedule %s", schedule.id)
             if schedule.matches(dt):
                 run_schedule = schedule
                 break
@@ -36,7 +37,14 @@ class Scheduler:
         self.running_program = self.ow.programs.store.get_program(
             run_schedule.program_id
         )
-        self.running_program
+        self.ow.fire_coroutine(
+            self.ow.programs.controller.run_program(self.running_program)
+        )
+        _LOGGER.debug(
+            "Running program: {} for schedule: {}".format(
+                self.running_program, run_schedule
+            )
+        )
 
     def program_complete(self, event: "Event"):
         program: BaseProgram = event.data["program"]

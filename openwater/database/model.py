@@ -33,6 +33,8 @@ zone = Table(
     Column("name", String(100), nullable=False),
     Column("zone_type", String(50), nullable=False),
     Column("is_master", Boolean(name="is_master_bool"), default=False),
+    Column("open_offset", Integer, default=0),
+    Column("close_offset", Integer, default=0),
     Column("attrs", JSON),
 )
 
@@ -94,36 +96,23 @@ program_step = Table(
         ForeignKey("program.id", ondelete="CASCADE"),
         nullable=False,
     ),
+    Column("duration", Integer, nullable=False),
     Column("order", Integer, nullable=False),
 )
 
-program_action = Table(
-    "program_action",
+program_step_zones = Table(
+    "program_step_zones",
     metadata,
-    Column("id", Integer, primary_key=True),
     Column(
         "step_id",
         Integer,
         ForeignKey("program_step.id", ondelete="CASCADE"),
         nullable=False,
     ),
-    Column("action_type", String(10), nullable=False),
-    Column("duration", Integer, nullable=False),
-)
-
-program_action_zones = Table(
-    "program_action_zones",
-    metadata,
-    Column(
-        "action_id",
-        Integer,
-        ForeignKey("program_action.id", ondelete="CASCADE"),
-        nullable=False,
-    ),
     Column(
         "zone_id", Integer, ForeignKey("zone.id", ondelete="CASCADE"), nullable=False
     ),
-    UniqueConstraint("action_id", "zone_id"),
+    UniqueConstraint("step_id", "zone_id"),
 )
 
 plugin_config = Table(
@@ -153,6 +142,16 @@ schedule = Table(
     Column("minute_interval", Integer),
     Column("on_day", Date),
     Column("start_day", Date),
+)
+
+log_entry = Table(
+    "log_entry",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("timestamp", DateTime, nullable=False),
+    Column("logger", String, nullable=False),
+    Column("level", String, nullable=False),
+    Column("msg", String, nullable=False),
 )
 
 DBModel = Table

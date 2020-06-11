@@ -1,18 +1,38 @@
 import logging
 from typing import Optional
 
+from openwater.database import DatabaseLoggingHandler
 
-async def setup_plugin(ow: "OpenWater", config: Optional[dict] = {}):
-    formatter = logging.Formatter("%(levelname)s - %(name)s - %(message)s")
+_STR_TO_LEVEL = {
+    "NONE": logging.NOTSET,
+    "DEBUG": logging.DEBUG,
+    "INFO": logging.INFO,
+    "WARN": logging.WARN,
+    "WARNING": logging.WARNING,
+    "ERROR": logging.ERROR,
+    "CRITICAL": logging.CRITICAL,
+}
+
+
+def get_level(level: Optional[str]) -> int:
+    if level is None:
+        return logging.DEBUG
+    level_ = level.upper()
+    if level_ not in _STR_TO_LEVEL:
+        return logging.DEBUG
+    return _STR_TO_LEVEL[level_]
+
+
+def setup_plugin(ow: "OpenWater", config: dict):
+    formatter = logging.Formatter(config.get("format", logging.BASIC_FORMAT))
     root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
+    root.setLevel(config.get("default"))
     hndlr = root.handlers[0]
     hndlr.setFormatter(formatter)
 
-    logging.getLogger("aiosqlite").setLevel(logging.WARN)
-    logging.getLogger("databases").setLevel(logging.WARN)
-    # sh = logging.StreamHandler()
-    # sh.setFormatter(formatter)
-    # sh.setLevel(logging.DEBUG)
-    # root.addHandler(sh)
-    # logging.getLogger("databases").setLevel(logging.ERROR)
+    if config.get("database", False) is True:
+        db_handler = DatabaseLoggingHandler(ow)
+        root.addHandler(db_handler)
+
+    for logger, level in config.get("loggers", {}).items():
+        logging.getLogger(logger).setLevel(get_level(level))

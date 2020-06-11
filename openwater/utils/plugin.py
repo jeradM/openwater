@@ -127,19 +127,19 @@ async def load_plugin(id_: str, ow: "OpenWater"):
     pc = await conn.fetch_one(
         plugin_config.select().where(plugin_config.c.plugin_id == id_)
     )
+    file_config = ow.config.get("plugins", {}).get(id_, {})
     if pc is None:
-        config = {}
+        config = file_config
     else:
-        # pc = s.query(MPluginConfig).filter_by(plugin_id=id_).one()
-        config = pc["config"]
+        config = dict(pc["config"], **file_config)
     reg = ow.plugins
     if id_ not in reg.all:
-        _LOGGER.error("Unable to find plugin: {}", id_)
+        _LOGGER.error("Unable to find plugin: %s", id_)
         raise PluginException("Unable to find plugin: {}".format(id_))
     p = reg.all.get(id_)
     plugin = importlib.import_module(p.pkg_path)
     if not hasattr(plugin, "setup_plugin"):
-        _LOGGER.error("Unable to load plugin {}: Missing setup_plugin function", id_)
+        _LOGGER.error("Unable to load plugin %s: Missing setup_plugin function", id_)
         return
     if asyncio.coroutines.iscoroutinefunction(plugin.setup_plugin):
         await plugin.setup_plugin(ow, config)

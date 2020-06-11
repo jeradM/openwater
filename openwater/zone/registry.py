@@ -26,23 +26,21 @@ class ZoneRegistry:
         self, zone_type: str, cls: Type[BaseZone], create_func: Callable
     ) -> None:
         if zone_type in self.zone_types:
-            _LOGGER.error(
-                "Attempting to register duplicate zone type: {}".format(zone_type)
-            )
+            _LOGGER.error("Attempting to register duplicate zone type: %s", zone_type)
             raise ZoneRegistrationException(
                 "Zone type '{}' has already been registered".format(zone_type)
             )
 
         self.zone_types[zone_type] = RegisteredZoneType(cls, create_func)
-        _LOGGER.debug("Registered zone type {}:{}".format(zone_type, cls))
+        _LOGGER.debug("Registered zone type %s:%s", zone_type, cls)
 
     def unregister_zone_type(self, zone_type: str) -> None:
         if zone_type in self.zone_types:
             self.zone_types.pop(zone_type)
-            _LOGGER.debug("Unregistered zone type: {}".format(zone_type))
+            _LOGGER.debug("Unregistered zone type: %s", zone_type)
 
     def get_zone_for_type(self, zone_type: str) -> RegisteredZoneType:
         if zone_type not in self.zone_types:
-            raise ZoneException("Zone type not found: {}".format(zone_type))
+            raise ZoneException("Zone type not found: %s", zone_type)
 
         return self.zone_types[zone_type]

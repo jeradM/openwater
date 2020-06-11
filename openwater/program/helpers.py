@@ -1,16 +1,15 @@
-from typing import TYPE_CHECKING, Collection
+from typing import TYPE_CHECKING, Collection, Any
 
 from openwater.database import model
-from openwater.database.model import schedule
 from openwater.errors import OWError
-from openwater.program.model import ProgramSchedule
+from openwater.program.model import ProgramSchedule, ProgramStep
 
 if TYPE_CHECKING:
     from openwater.core import OpenWater
 
 
 async def load_schedules(ow: "OpenWater"):
-    rows = await ow.db.list(schedule)
+    rows = await ow.db.list(model.schedule)
     for row in rows:
         data = dict(row)
         ow.programs.store.add_schedule(ProgramSchedule(**data))
@@ -21,8 +20,19 @@ async def load_programs(ow: "OpenWater"):
     if not ow.db:
         raise OWError("OpenWater database not initialized")
 
-    rows = await ow.db.connection.fetch_all(query=model.program.select())
-    for row in rows:
+    schedules = [ProgramSchedule(**dict(s)) for s in await ow.db.list(model.schedule)]
+    steps = [ProgramStep(**dict(s)) for s in await ow.db.list(model.program_step)]
+    step_zones: Any = await ow.db.list(model.program_step_zones)
+    for step in steps:
+        step.zones = [
+            ow.zones.store.get_zone(sz.zone_id)
+            for sz in step_zones
+            if sz.step_id == step.id
+        ]
+
+    programs: Any = await ow.db.list(model.program)
+
+    for row in programs:
         program = dict(row)
         program_type = ow.programs.registry.get_program_for_type(
             program["program_type"]
@@ -31,8 +41,8 @@ async def load_programs(ow: "OpenWater"):
             continue
         p = program_type.create(ow, program)
         ow.programs.store.add_program(p)
-
-    await load_schedules(ow)
+        p.schedules = [s for s in schedules if s.program_id == p.id]
+        p.steps = [s for s in steps if s.program_id == p.id]
 
 
 async def insert_program(ow: "OpenWater", data: dict) -> int:

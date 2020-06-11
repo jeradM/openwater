@@ -1,9 +1,13 @@
+import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, date, time
 from enum import Enum
-from typing import Collection, Optional
+from typing import Collection, Optional, List, Any
 
 from openwater.errors import ProgramException
+from openwater.zone.model import BaseZone
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class BaseProgram(ABC):
@@ -11,39 +15,86 @@ class BaseProgram(ABC):
         self,
         id: int,
         name: str,
-        steps: Collection["ProgramStep"] = None,
+        steps: List["ProgramStep"] = None,
         schedules: Collection["ProgramSchedule"] = None,
     ):
         self.id = id
         self.name = name
         self.is_running = False
-        self.steps = steps
+        self._steps = steps
         self.schedules = schedules
 
     def to_dict(self) -> dict:
         return {
             "id": self.id,
             "name": self.name,
+            "program_type": self.program_type(),
             "is_running": self.is_running,
+            "steps": self.steps,
+            "schedules": self.schedules,
         }
 
+    def to_db(self) -> dict:
+        return {"id": self.id, "name": self.name, "program_type": self.program_type}
 
-class ProgramAction(ABC):
-    """Defines an action to take during a step in a program"""
+    @property
+    def steps(self):
+        return sorted(self._steps, key=lambda step: step.order)
 
-    def __init__(self, id: int, duration: int):
+    @steps.setter
+    def steps(self, steps):
+        self._steps = steps
+
+    @staticmethod
+    @abstractmethod
+    def program_type() -> str:
+        pass
+
+
+class ProgramStep:
+    """Defines a step in a program"""
+
+    def __init__(
+        self,
+        id: int,
+        duration: int,
+        order: int,
+        program_id: int,
+        zones: Optional[Collection[BaseZone]] = None,
+    ):
         self.id = id
         self.duration = duration
+        self.order = order
+        self.program_id = program_id
+        self.zones = zones
         self.running = False
         self.done = False
         self.started_at: Optional[datetime] = None
         self.run_until: Optional[datetime] = None
         self.completed_at: Optional[datetime] = None
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "duration": self.duration,
+            "program_id": self.program_id,
+            "order": self.order,
+            "zones": self.zones,
+        }
+
+    def to_db(self):
+        return {
+            "id": self.id,
+            "duration": self.duration,
+            "order": self.order,
+            "program_id": self.program_id,
+        }
+
     def start(self) -> None:
         self.running = True
         self.started_at = datetime.now()
         self.run_until = self.started_at + timedelta(seconds=self.duration)
+        _LOGGER.debug("Starting step: %s", self.to_dict())
 
     def end(self) -> None:
         self.running = False
@@ -56,57 +107,50 @@ class ProgramAction(ABC):
         now = datetime.now()
         return (self.run_until - now).total_seconds() < 1
 
+    def check_open_master_zones(self):
+        res = []
+        for mz in self.master_zones:
+            if mz.open_offset <= 0 or mz.is_open():
+                continue
+            if self.time_elapsed >= mz.open_offset:
+                res.append(mz.id)
+        _LOGGER.debug("Checked master zones to open: %s", res)
+        return res
 
-class SequentialAction(ProgramAction):
-    """Defines when and for how long a zone should run and tracks a zone's progress"""
-
-    ACTION_TYPE = "Sequential"
-
-    def __init__(self, zone_id: int, duration: int):
-        super().__init__(duration)
-        self.zone_id = zone_id
-
-
-class ParallelAction(ProgramAction):
-    ACTION_TYPE = "Parallel"
-
-    def __init__(self, zone_ids: Collection[int], duration: int):
-        super().__init__(duration)
-        self.zone_ids = zone_ids
-
-
-class SoakAction(ProgramAction):
-    ACTION_TYPE = "Soak"
-
-
-class ProgramStep:
-    """Represents an individual, serial step in a program which can have multiple zones"""
-
-    def __init__(self, id: int, actions: Collection[ProgramAction]):
-        self.id: int = id
-        self.actions: Collection[ProgramAction] = actions
-        self.done: bool = False
-        self.started_at: Optional[datetime] = None
-        self.completed_at: Optional[datetime] = None
-        self.running_steps: Optional[Collection[ProgramAction]] = None
-
-    def start(self) -> None:
-        self.started_at = datetime.now()
-        for step in self.actions:
-            step.start()
-
-    def end(self) -> None:
-        self.done = True
-        self.completed_at = datetime.now()
+    def check_close_master_zones(self, next_step_zones):
+        next_ids = [zone.id for zone in next_step_zones]
+        res = []
+        for mz in self.master_zones:
+            if mz.close_offset >= 0 or not mz.is_open():
+                continue
+            if self.time_remaining <= abs(mz.close_offset) and mz.id not in next_ids:
+                res.append(mz.id)
+        _LOGGER.debug("Checked master zones to close: %s", res)
+        return res
 
     @property
-    def running(self) -> bool:
-        return any(a.running for a in self.actions)
+    def time_remaining(self):
+        t = (self.run_until - datetime.now()).total_seconds()
+        _LOGGER.debug("Time remaining in program: %d sec", t)
+        return t
 
-    def is_complete(self) -> bool:
-        if self.done:
-            return True
-        return all(a.is_complete() for a in self.actions)
+    @property
+    def time_elapsed(self):
+        t = (datetime.now() - self.started_at).total_seconds()
+        _LOGGER.debug("Time elapsed in program: %d sec", t)
+        return t
+
+    @property
+    def master_zones(self) -> List["BaseZone"]:
+        if self.zones is None:
+            return []
+        l = []
+        for zone in self.zones:
+            if zone.master_zones is None:
+                continue
+            for master in zone.master_zones:
+                l.append(master)
+        return l
 
 
 class ScheduleType(Enum):
@@ -150,7 +194,7 @@ class ProgramSchedule:
         self.minute_interval = minute_interval
         self.on_day: date = on_day
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {
             "id": self.id,
             "program_id": self.program_id,
@@ -165,6 +209,9 @@ class ProgramSchedule:
             "start_day": self.start_day,
         }
 
+    def to_db(self) -> dict:
+        return self.to_dict()
+
     def matches(self, dt: datetime) -> bool:
         if self.type == ScheduleType.WEEKLY:
             return self._match_weekly(dt)
@@ -176,7 +223,8 @@ class ProgramSchedule:
             raise ProgramException("Unknown schedule type: {}".format(self.type))
 
     def _match_weekly(self, dt: datetime) -> bool:
-        dow = (dt.weekday() + 2) % 7
+        wd = dt.weekday()
+        dow = (wd + 1) % 7
         dow_matches = (1 << dow) & self.dow_mask != 0
 
         time_mins = (dt.hour * 60) + dt.minute

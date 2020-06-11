@@ -7,6 +7,8 @@ def get_master_data():
         "name": "Master Zone 1",
         "zone_type": "SHIFT_REGISTER",
         "is_master": True,
+        "open_offset": 5,
+        "close_offset": 7,
         "attrs": {"sr_idx": 0},
     }
 
@@ -49,22 +51,16 @@ def get_program_data():
 
 
 def get_program_step_data():
-    return [{"program_id": 1, "order": i} for i in range(1, 8)]
-
-
-def get_program_action_data():
-    types = ["Soak", "Sequential"]
+    types = ["Sequential", "Soak"]
     return [
-        {"step_id": i, "action_type": types[i % 2], "duration": randint(10, 45),}
-        for i in range(1, 8)
+        {"program_id": 1, "order": i, "duration": randint(1, 5)} for i in range(1, 8)
     ]
 
 
-def get_action_zones_data():
+def get_step_zones_data():
     res = []
     for i in range(1, 8):
-        if i % 2:
-            res.append({"zone_id": i + 1, "action_id": i})
+        res.append({"zone_id": i + 1, "step_id": i})
     return res
 
 

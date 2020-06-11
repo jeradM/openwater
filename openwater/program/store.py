@@ -32,7 +32,7 @@ class ProgramStore:
 
     @property
     def schedules(self) -> List[ProgramSchedule]:
-        return list(self.schedules_.values())
+        return [s for p in self.programs for s in p.schedules]
 
     @nonblocking
     def get_program(self, id_: int) -> BaseProgram:
