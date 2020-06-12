@@ -23,8 +23,8 @@ ZONE_SCHEMA = {
     "name": {"type": "string", "minlength": 3, "maxlength": 100, "required": True},
     "zone_type": {"type": "string", "maxlength": 50, "required": True},
     "is_master": {"type": "boolean", "required": True},
-    "open_offset": {"type": "integer"},
-    "close_offset": {"type": "integer"},
+    "open_offset": {"type": "integer", "nullable": True},
+    "close_offset": {"type": "integer", "nullable": True},
     "attrs": {"type": "dict", "required": True},
     "runs": {"type": "list", "required": False, "schema": RUN_SCHEMA},
 }

@@ -12,13 +12,9 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-def register_endpoints(endpoint: Callable, route: Callable) -> None:
-    """
-    endpoint: OWHttp.register_endpoint
-    route: OWHttp.register_route
-    """
-    route(
-        get_schedules_for_program, "/api/programs/{id:int}/schedules", methods=["GET"]
+def register_endpoints(ow: "OpenWater") -> None:
+    ow.http.register_route(
+        "/api/programs/{id:int}/schedules", get_schedules_for_program, methods=["GET"]
     )
 
 

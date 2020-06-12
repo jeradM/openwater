@@ -14,11 +14,13 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-def register_endpoints(endpoint: Callable, route: Callable):
-    endpoint(Zone)
-    route(create_zone, "/api/zones", methods=["POST"])
-    route(get_zones, "/api/zones", methods=["GET"])
-    route(zone_cmd, "/api/zones/{zone_id:int}/{cmd:str}", methods=["POST"])
+def register_endpoints(ow: "OpenWater"):
+    ow.http.register_endpoint(Zone)
+    ow.http.register_route("/api/zones", create_zone, methods=["POST"])
+    ow.http.register_route("/api/zones", get_zones, methods=["GET"])
+    ow.http.register_route(
+        "/api/zones/{zone_id:int}/{cmd:str}", zone_cmd, methods=["POST"]
+    )
 
 
 class Zone(HTTPEndpoint):

@@ -45,24 +45,17 @@ def create_zone(ow: "OpenWater", zone_data: dict) -> "ShiftRegisterZone":
     v.allow_unknown = True
     if not v.validate(zone_data["attrs"]):
         raise ZoneValidationException("ShiftRegisterZone validation failed", v.errors)
-    return ShiftRegisterZone.of(ow, zone_data)
+    # return ShiftRegisterZone.of(ow, zone_data)
+    return ShiftRegisterZone(ow, **zone_data)
 
 
 class ShiftRegisterZone(BaseZone):
     ATTR_SCHEMA = {"sr_idx": {"type": "integer", "required": True}}
 
-    def __init__(
-        self,
-        ow: "OpenWater",
-        id_: int,
-        name: str,
-        zone_type: str,
-        is_master: bool,
-        attrs: dict,
-    ):
-        super().__init__(ow, id_, name, zone_type, is_master, attrs)
+    def __init__(self, ow: "OpenWater", **kwargs: dict):
+        super().__init__(ow=ow, **kwargs)
         self._sr: "ShiftRegister" = ow.data[DATA_SHIFT_REGISTER]
-        self._sr_idx = attrs.get("sr_idx")
+        self._sr_idx = kwargs.get("attrs").get("sr_idx")
 
     @property
     def extra_attrs(self):

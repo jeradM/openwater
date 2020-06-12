@@ -9,14 +9,10 @@ if TYPE_CHECKING:
     from openwater.core import OpenWater
 
 
-def register_endpoints(endpoint: Callable, route: Callable) -> None:
-    """
-    endpoint: OWHttp.register_endpoint
-    route: OWHttp.register_route
-    """
-    route(get_program, "/api/programs/{id:int}", methods=["GET"])
-    route(update_program, "/api/programs/{id:int}", methods=["PUT"])
-    route(get_programs, "/api/programs", methods=["GET"])
+def register_endpoints(ow: "OpenWater") -> None:
+    ow.http.register_route("/api/programs/{id:int}", get_program, methods=["GET"])
+    ow.http.register_route("/api/programs/{id:int}", update_program, methods=["PUT"])
+    ow.http.register_route("/api/programs", get_programs, methods=["GET"])
 
 
 async def get_program(request: Request) -> Response:

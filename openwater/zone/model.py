@@ -29,7 +29,7 @@ class BaseZone(ABC):
     def __init__(
         self,
         ow: "OpenWater",
-        id_: int,
+        id: int,
         name: str,
         zone_type: str,
         is_master: bool,
@@ -39,7 +39,7 @@ class BaseZone(ABC):
         last_run: Optional[ZoneRun] = None,
     ):
         self._ow = ow
-        self.id = id_
+        self.id = id
         self.name = name
         self.zone_type = zone_type
         self.is_master = is_master
@@ -57,6 +57,8 @@ class BaseZone(ABC):
             name=data["name"],
             zone_type=data["zone_type"],
             is_master=data["is_master"],
+            open_offset=data["open_offset"],
+            close_offset=data["close_offset"],
             attrs=data["attrs"],
         )
 
@@ -66,6 +68,8 @@ class BaseZone(ABC):
             "name": self.name,
             "zone_type": self.zone_type,
             "is_master": self.is_master,
+            "open_offset": self.open_offset,
+            "close_offset": self.close_offset,
             "open": self.is_open(),
             "attrs": dict(self.attrs, **self.extra_attrs),
             "last_run": self.last_run,

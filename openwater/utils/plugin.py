@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, List, Dict
 
 import yaml
 
+from openwater.constants import EVENT_PLUGIN_LOADED
 from openwater.database.model import plugin_config
 from openwater.errors import PluginException
 
@@ -145,6 +146,7 @@ async def load_plugin(id_: str, ow: "OpenWater"):
         await plugin.setup_plugin(ow, config)
     else:
         plugin.setup_plugin(ow, config)
+    ow.bus.fire(EVENT_PLUGIN_LOADED, {"plugin": p})
 
 
 async def load_logging_plugin(ow) -> None:

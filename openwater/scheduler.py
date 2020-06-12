@@ -51,10 +51,10 @@ class Scheduler:
         if program.id != self.running_program.pid:
             _LOGGER.error("Completed program did not match running program")
 
-        self.running_schedule = None
+        self.running_program = None
 
     async def check_program_progress(self, event):
-        if self.running_schedule is None:
+        if self.running_program is None:
             return
 
         event_data = event["data"]

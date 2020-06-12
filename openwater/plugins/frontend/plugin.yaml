@@ -1,0 +1,6 @@
+id: frontend
+name: OpenWater Frontend
+description: OpenWater Vue.js Frontend
+depends: []
+core: true
+user: false

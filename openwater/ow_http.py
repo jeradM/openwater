@@ -5,6 +5,7 @@ from starlette.applications import Starlette
 from starlette.endpoints import HTTPEndpoint, WebSocketEndpoint
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
+from starlette.staticfiles import StaticFiles
 from uvicorn import Server, Config
 
 from openwater.utils.decorator import nonblocking
@@ -39,12 +40,22 @@ class OWHttp:
         self.app.add_websocket_route(getattr(endpoint, "path"), endpoint)
 
     @nonblocking
-    def register_route(self, endpoint: Callable, path: str, **kwargs) -> None:
+    def register_route(self, path: str, endpoint: Callable, **kwargs) -> None:
         self.app.add_route(path, endpoint, **kwargs)
 
     @nonblocking
-    def register_websocket_route(self, endpoint: Callable, path: str, **kwargs) -> None:
+    def register_websocket_route(self, path: str, endpoint: Callable, **kwargs) -> None:
         self.app.add_websocket_route(path, endpoint, **kwargs)
+
+    @nonblocking
+    def register_static_directory(
+        self, path: str, dir: str, html: bool = False, name: str = None
+    ) -> None:
+        self.app.mount(
+            path=path,
+            app=StaticFiles(directory=dir, html=html, check_dir=False),
+            name=name,
+        )
 
     async def run(self):
         _LOGGER.info("Starting OpenWater HTTP server")

@@ -26,7 +26,7 @@ class ZoneController:
         _LOGGER.debug("Opened zone %d", zone_id)
         self._ow.bus.fire(EVENT_ZONE_STATE, target)
 
-    async def close_zone(self, zone_id: int, close_master: bool = True):
+    async def close_zone(self, zone_id: int):
         target = self._store.get_zone(zone_id)
         if target is None:
             _LOGGER.error("Requested to close a non-existent zone: %d", zone_id)

@@ -19,13 +19,13 @@ schema = schemas.SchemaGenerator(
 
 def init_endpoints(ow: OpenWater):
     ow.http.register_endpoint(Plugins)
-    zone.register_endpoints(ow.http.register_endpoint, ow.http.register_route)
-    program.register_endpoints(ow.http.register_endpoint, ow.http.register_route)
-    schedule.register_endpoints(ow.http.register_endpoint, ow.http.register_route)
+    zone.register_endpoints(ow)
+    program.register_endpoints(ow)
+    schedule.register_endpoints(ow)
     ow.http.register_route(
-        openapi_schema, "/api/schema", methods=["GET"], include_in_schema=False
+        "/api/schema", openapi_schema, methods=["GET"], include_in_schema=False
     )
-    ow.http.register_route(core, "/api/core", methods=["GET"])
+    ow.http.register_route("/api/core", core, methods=["GET"])
 
 
 async def core(request) -> ToDictJSONResponse:

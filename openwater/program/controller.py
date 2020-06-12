@@ -46,52 +46,40 @@ class ProgramController:
         step = self.current_step
         _LOGGER.debug("Checking program progress: Step: %d", step.id)
 
-        open_mzs = step.check_open_master_zones()
-        for mz in open_mzs:
-            self.ow.fire_coroutine(self.ow.zones.controller.open_zone(mz))
-
-        next_step = self.get_next_step()
-        if next_step:
-            close_mzs = step.check_close_master_zones(next_step.master_zones)
-            for mz in close_mzs:
-                self.ow.fire_coroutine(self.ow.zones.controller.close_zone(mz))
-
         if not step.is_complete():
             _LOGGER.debug("Step not complete: %d", step.id)
             return
 
         _LOGGER.debug("Step complete: %d", step.id)
         if step.running:
-            next_mzs = next_step.master_zones if next_step is not None else []
-            for zone in step.zones:
-                await self.ow.zones.controller.close_zone(zone.id)
-                _LOGGER.debug(
-                    "Current mzs: %s - Next mzs: %s", zone.master_zones, next_mzs
-                )
-                mzs = set(zone.master_zones) if zone.master_zones is not None else set()
-                for mz in list(mzs - set(next_mzs)):
-                    _LOGGER.debug(
-                        "Master zone %d should close: %s - offset: %s",
-                        mz.id,
-                        mz.name,
-                        mz.close_offset,
-                    )
-                    if not mz.is_open():
-                        continue
-                    if mz.close_offset <= 0:
-                        _LOGGER.debug("Closing master zone")
-                        self.ow.fire_coroutine(
-                            self.ow.zones.controller.close_zone(mz.id)
-                        )
-                    else:
-                        _LOGGER.debug("Closing master in %d sec", mz.close_offset)
-                        self.ow.run_coroutine_in(
-                            self.ow.zones.controller.close_zone(mz.id), mz.close_offset
-                        )
-
+            await self.finish_step(step)
         step.end()
         _LOGGER.debug("Program step %d finished", self.current_step_idx)
         await self.next_step()
+
+    async def finish_step(self, step: ProgramStep) -> None:
+        next_step = self.get_next_step()
+        next_masters = next_step.master_zones if next_step else []
+        for zone in step.zones:
+            await self.ow.zones.controller.close_zone(zone.id)
+            if zone.master_zones is None:
+                continue
+            for mz in zone.master_zones:
+                if mz in next_masters:
+                    _LOGGER.debug(
+                        "Master zone %d will be used in next step - not closing", mz.id
+                    )
+                    continue
+                if mz.close_offset <= 0:
+                    _LOGGER.debug("Closing master zone %d now", mz.id)
+                    self.ow.fire_coroutine(self.ow.zones.controller.close_zone(mz.id))
+                else:
+                    _LOGGER.debug(
+                        "Closing master zone %d in %d seconds", mz.id, mz.close_offset
+                    )
+                    self.ow.run_coroutine_in(
+                        self.ow.zones.controller.close_zone(mz.id), mz.close_offset,
+                    )
 
     async def complete_step(self):
         pass
@@ -101,6 +89,39 @@ class ProgramController:
         if len(self.current_program.steps) <= next_step_idx:
             return None
         return self.current_program.steps[next_step_idx]
+
+    async def start_step(self, step: ProgramStep) -> None:
+        if not step.zones:
+            _LOGGER.debug("No zones - Soak step")
+            return
+        mzs = [
+            mz
+            for mz in sorted(
+                step.master_zones, key=lambda z: z.open_offset, reverse=True
+            )
+            if not mz.is_open()
+        ]
+        if not mzs:
+            _LOGGER.debug("No master zones in this step - opening zones")
+            await asyncio.gather(
+                *[self.ow.zones.controller.open_zone(zone.id) for zone in step.zones]
+            )
+            return
+        first = mzs[0]
+        _LOGGER.debug("Opening first master zone %d", first.id)
+        await self.ow.zones.controller.open_zone(first.id)
+        for mz in mzs[1:]:
+            diff = first.open_offset - mz.open_offset
+            _LOGGER.debug("Opening master %d in %d seconds", mz.id, diff)
+            self.ow.run_coroutine_in(
+                self.ow.zones.controller.open_zone(mz.id), diff,
+            )
+        _LOGGER.debug("Waiting %d seconds to open zones", first.open_offset)
+        await asyncio.sleep(first.open_offset)
+        _LOGGER.debug("Opening zones %s", ",".join([str(z.id) for z in step.zones]))
+        await asyncio.gather(
+            *[self.ow.zones.controller.open_zone(zone.id) for zone in step.zones]
+        )
 
     async def next_step(self):
         _LOGGER.debug("Running next step")
@@ -112,10 +133,7 @@ class ProgramController:
             self.program_complete()
             return
         next_step = self.current_program.steps[next_step_idx]
-        open_mzs = next_step.check_open_master_zones()
-        await asyncio.gather(
-            *[self.ow.zones.controller.open_zone(zone.id) for zone in next_step.zones]
-        )
+        await self.start_step(next_step)
         next_step.start()
         if self.current_step:
             _LOGGER.debug("Current: %d - Next: %d", self.current_step.id, next_step.id)

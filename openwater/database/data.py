@@ -53,7 +53,7 @@ def get_program_data():
 def get_program_step_data():
     types = ["Sequential", "Soak"]
     return [
-        {"program_id": 1, "order": i, "duration": randint(1, 5)} for i in range(1, 8)
+        {"program_id": 1, "order": i, "duration": randint(30, 120)} for i in range(1, 8)
     ]
 
 
