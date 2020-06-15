@@ -7,11 +7,13 @@ import ZoneForm from "../../components/zones/ZoneForm";
 export default {
   name: "EditZone",
   components: { ZoneForm },
-  computed: {
-    zone() {
-      const zone = this.$store.getters["zones/zoneObj"][this.$route.params.id];
-      return JSON.parse(JSON.stringify(zone))
-    },
+  data: () => ({
+    zone: {},
+  }),
+  beforeMount() {
+    const id = this.$route.params.id;
+    const zones = this.$store.getters["zones/zoneObj"];
+    this.zone = JSON.parse(JSON.stringify(zones[id]));
   },
 };
 </script>

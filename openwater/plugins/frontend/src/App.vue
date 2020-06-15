@@ -51,7 +51,7 @@
     </v-navigation-drawer>
 
     <v-content app>
-      <v-sheet class="pa-4">
+      <v-sheet class="px-4 pt-8">
         <router-view></router-view>
       </v-sheet>
     </v-content>
@@ -101,7 +101,9 @@ export default {
       return this.$route.meta.save;
     },
     saveFunc() {
-      return this.canSave && this.$store.state.saveFunc ? this.$store.state.saveFunc : () => {};
+      return this.canSave && this.$store.state.saveFunc
+        ? this.$store.state.saveFunc
+        : () => {};
     },
   },
   watch: {

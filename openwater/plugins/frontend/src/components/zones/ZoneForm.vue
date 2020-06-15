@@ -8,7 +8,6 @@
               v-model.trim="zoneData.name"
               label="Name"
               :error-messages="errors.name"
-              outlined
             />
           </v-col>
           <v-col cols="3">
@@ -23,7 +22,6 @@
               v-model.number="zoneData.open_offset"
               label="Open Offset"
               :error-messages="errors.open_offset"
-              outlined
             />
           </v-col>
           <v-col v-if="zoneData.is_master" cols="6">
@@ -31,7 +29,6 @@
               v-model.number="zoneData.close_offset"
               label="Close Offset"
               :error-messages="errors.close_offset"
-              outlined
             />
           </v-col>
           <v-col cols="12" sm="12">
@@ -40,7 +37,6 @@
               label="Zone Type"
               :items="zoneTypeList"
               :error-messages="errors.zone_type"
-              outlined
             />
           </v-col>
           <v-col v-if="!zoneData.is_master" cols="12" sm="12">
@@ -50,7 +46,6 @@
               :items="soilTypes"
               item-text="name"
               item-value="id"
-              outlined
             />
           </v-col>
           <v-col v-if="!zoneData.is_master" cols="12" sm="12">
@@ -58,7 +53,6 @@
               v-model.number="zoneData.attrs.precip_rate"
               type="number"
               label="Precipitation Rate (Optional)"
-              outlined
             />
           </v-col>
           <v-col :key="attr.id" cols="12" sm="12" v-for="attr of zoneAttrs">
@@ -75,7 +69,6 @@
               :label="attr.label"
               :items="attr.options"
               :error-messages="errors.attrs && errors.attrs[attr.id]"
-              outlined
             />
           </v-col>
         </v-row>
