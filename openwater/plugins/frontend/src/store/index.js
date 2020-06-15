@@ -16,6 +16,7 @@ export default new Vuex.Store({
     return {
       saveFunc: null,
       canSave: false,
+      scheduleTypes: ["Weekly", "Interval", "Single"],
     };
   },
   mutations: {

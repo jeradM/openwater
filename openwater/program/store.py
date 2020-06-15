@@ -11,7 +11,7 @@ from openwater.program.helpers import (
     delete_program,
     delete_schedule,
 )
-from openwater.program.model import BaseProgram, ProgramSchedule
+from openwater.program.model import BaseProgram, ProgramSchedule, ProgramStep
 from openwater.program.registry import ProgramRegistry
 from openwater.utils.decorator import nonblocking
 
@@ -25,6 +25,7 @@ class ProgramStore:
         self._registry = registry
         self.programs_: dict = dict()
         self.schedules_: dict = dict()
+        self.steps_: dict = dict()
 
     @property
     def programs(self) -> List[BaseProgram]:
@@ -33,6 +34,10 @@ class ProgramStore:
     @property
     def schedules(self) -> List[ProgramSchedule]:
         return [s for p in self.programs for s in p.schedules]
+
+    @property
+    def steps(self) -> List[ProgramStep]:
+        return [s for p in self.programs for s in p.steps]
 
     @nonblocking
     def get_program(self, id_: int) -> BaseProgram:

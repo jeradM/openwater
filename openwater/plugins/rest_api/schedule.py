@@ -5,6 +5,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 from openwater.plugins.rest_api.helpers import ToDictJSONResponse, respond
+from openwater.program.model import ScheduleType
 
 if TYPE_CHECKING:
     from openwater.core import OpenWater
@@ -16,6 +17,11 @@ def register_endpoints(ow: "OpenWater") -> None:
     ow.http.register_route(
         "/api/programs/{id:int}/schedules", get_schedules_for_program, methods=["GET"]
     )
+    ow.http.register_route("/api/schedules/types", get_schedule_types, methods=["GET"])
+
+
+async def get_schedule_types(request: Request) -> Response:
+    return respond([st.value for st in ScheduleType])
 
 
 async def get_schedules_for_program(request: Request) -> Response:

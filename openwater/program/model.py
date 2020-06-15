@@ -165,6 +165,7 @@ class ProgramSchedule:
         *,
         id: int,
         program_id: int,
+        schedule_type: str,
         enabled: bool = False,
         at: int = None,  # minutes
         day_interval: int = None,  # re-run every n days

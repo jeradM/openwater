@@ -134,6 +134,7 @@ schedule = Table(
         ForeignKey("program.id", ondelete="CASCADE"),
         nullable=False,
     ),
+    Column("schedule_type", String(15), nullable=False, default="Weekly"),
     Column("enabled", Boolean(name="enabled_bool"), nullable=False, default=False),
     Column("at", Integer, nullable=False),
     Column("day_interval", Integer),

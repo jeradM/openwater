@@ -1,5 +1,5 @@
 <template>
-  <v-card max-width="800" class="mx-auto mt-2">
+  <v-card max-width="800" class="mx-auto">
     <v-card-text>
       <v-form>
         <v-row>
@@ -85,7 +85,6 @@ import { deleteZone, saveZone } from "../../utils/zones";
 export default {
   name: "ZoneForm",
   data: () => ({
-    // zoneData: { attrs: {} },
     errors: {},
   }),
   props: {
@@ -94,8 +93,8 @@ export default {
   methods: {
     async save() {
       const resp = await saveZone(this.zoneData);
-      const result = await resp.json();
       if (resp.status !== 200) {
+        const result = await resp.json();
         this.errors = result.errors;
         return;
       }
@@ -130,7 +129,6 @@ export default {
     },
   },
   mounted() {
-    // this.zoneData = { ...this.zone, attrs: { ...this.zone.attrs } };
     this.$store.commit("setSaveFunc", this.save);
   },
 };

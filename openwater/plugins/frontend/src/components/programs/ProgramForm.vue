@@ -38,7 +38,7 @@
       </v-card-text>
     </v-card>
     <ProgramSteps :steps="program.steps" />
-    <ProgramSchedules />
+    <ProgramSchedules :schedules="program.schedules" />
   </v-form>
 </template>
 
@@ -64,10 +64,11 @@ export default {
       //   this.errors = result.errors;
       //   return;
       // }
+      console.log(this.program);
       this.goBack();
       // this.errors = {};
       EventBus.$emit("snackbar", {
-        msg: `Zone ${this.zone.id ? "Updated" : "Saved"}`,
+        msg: `Program ${this.program.id ? "Updated" : "Saved"}`,
       });
     },
     async deleteProgram() {
@@ -81,17 +82,6 @@ export default {
     goBack() {
       this.$router.go(-1);
     },
-  },
-  computed: {
-    // ...mapGetters({
-    //   zoneTypes: "zones/zoneTypes",
-    //   zoneTypeList: "zones/zoneTypeList",
-    //   soilTypes: "zones/soilTypes",
-    // }),
-    // zoneAttrs() {
-    //   const selectedType = this.zoneTypes[this.zone.zone_type];
-    //   return (selectedType && selectedType.attrs) || {};
-    // },
   },
   mounted() {
     this.$store.commit("setSaveFunc", this.save);

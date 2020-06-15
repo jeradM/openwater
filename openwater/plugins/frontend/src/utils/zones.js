@@ -13,7 +13,7 @@ export const saveZone = async ({
   if (id) url += `/${id}`;
   const method = id ? "put" : "post";
   console.log("is_master", is_master);
-  const resp = await fetch(url, {
+  return await fetch(url, {
     method: method,
     header: {
       "Content-Type": "application/json",
@@ -28,7 +28,6 @@ export const saveZone = async ({
       attrs,
     }),
   });
-  return resp;
 };
 
 export const deleteZone = async ({ id }) => {

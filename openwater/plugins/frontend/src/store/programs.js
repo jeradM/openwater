@@ -1,30 +1,36 @@
 const state = () => ({
   all: [],
+  steps: [],
+  schedules: [],
 });
 
 const getters = {
   programObj(state) {
     return state.all.reduce((obj, item) => ((obj[item.id] = item), obj), {});
   },
-  schedules(state) {
-    return state.all.map((p) => p.schedules).flat();
+  programSchedules(state) {
+    return (programId) =>
+      state.schedules.filter((s) => s.program_id === programId);
+  },
+  programSteps(state) {
+    return (programId) => state.steps.filter((s) => s.program_id === programId);
   },
   runningProgram(state) {
     return state.all.find((p) => p.is_running) || null;
   },
 };
 
-const actions = {
-  //   fetchZones({ commit }) {
-  //     fetch("http://localhost:8000/api/zones")
-  //       .then((res) => res.json())
-  //       .then((data) => commit("setZones", data));
-  //   },
-};
+const actions = {};
 
 const mutations = {
   setPrograms(state, programs) {
     state.all = programs;
+  },
+  setSchedules(state, schedules) {
+    state.schedules = schedules;
+  },
+  setSteps(state, steps) {
+    state.steps = steps;
   },
 };
 

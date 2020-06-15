@@ -4,12 +4,12 @@
     <v-card class="mb-6">
       <v-card-text>
         <v-list>
-          <draggable :list="steps" group="steps">
-            <Step
+          <draggable :list="steps">
+            <ProgramStep
               v-for="(step, idx) in steps"
               :step="step"
               :idx="idx"
-              :key="step.id"
+              :key="idx"
               :removeStep="removeStep"
             />
           </draggable>
@@ -25,12 +25,12 @@
 
 <script>
 import draggable from "vuedraggable";
-import Step from "./Step";
+import ProgramStep from "./ProgramStep";
 
 export default {
   name: "ProgramSteps",
   components: {
-    Step,
+    ProgramStep,
     draggable,
   },
   props: {
