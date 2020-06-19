@@ -38,10 +38,16 @@ export default {
   },
   methods: {
     addStep() {
-      this.steps.push({});
+      this.steps.push({ zones: [] });
     },
     removeStep(idx) {
       this.steps = this.steps.splice(idx, 1);
+    },
+  },
+  watch: {
+    steps() {
+      this.steps.forEach((step, idx) => (step.order = idx));
+      console.log("Steps: ", this.steps);
     },
   },
 };

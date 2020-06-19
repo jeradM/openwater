@@ -8,20 +8,18 @@
         <v-row dense no-gutters class="mt-6">
           <v-col cols="12" sm="6" md="8" class="pl-3">
             <v-select
-              multiple
-              :value="step.zones"
+              v-model="step.zones"
               :items="allZones"
               item-value="id"
               item-text="name"
               label="Zone(s)"
+              multiple
               dense
             />
           </v-col>
           <v-col cols="6" sm="3" md="2" class="px-3">
             <v-text-field
-              :value="minutes"
-              @keyup="updateDurationMin"
-              @change="updateDurationMin"
+              v-model="minutes"
               label="Minutes"
               class="duration"
               dense
@@ -29,9 +27,7 @@
           </v-col>
           <v-col cols="6" sm="3" md="2" class="pr-3">
             <v-text-field
-              :value="seconds"
-              @keyup="updateDurationSec"
-              @change="updateDurationSec"
+              v-model="seconds"
               label="Seconds"
               class="duration"
               dense
@@ -49,9 +45,6 @@
 </template>
 
 <script>
-const getEventValue = (event) =>
-  parseInt(event.target ? event.target.value : event);
-
 export default {
   name: "Step",
   props: {
@@ -59,25 +52,31 @@ export default {
     idx: Number,
     removeStep: Function,
   },
-  methods: {
-    updateDurationMin(event) {
-      const val = getEventValue(event) || 0;
-      this.step.duration = val * 60 + (this.step.duration % 60);
-    },
-    updateDurationSec(event) {
-      const val = getEventValue(event) || 0;
-      this.step.duration = Math.floor(this.step.duration / 60) * 60 + val;
-    },
-  },
   computed: {
     allZones() {
       return this.$store.state.zones.all.filter((z) => !z.is_master);
     },
-    minutes() {
-      return Math.floor(this.step.duration / 60) || 0;
+    minutes: {
+      get() {
+        return this.step.duration ? Math.floor(this.step.duration / 60) : 0;
+      },
+      set(val) {
+        const stepSecs = this.step.duration ? this.step.duration % 60 : 0;
+        this.step.duration = parseInt(val || 0) * 60 + stepSecs;
+        console.log("MInutes: ", this.step.duration);
+      },
     },
-    seconds() {
-      return this.step.duration % 60 || 0;
+    seconds: {
+      get() {
+        return this.step.duration % 60 || 0;
+      },
+      set(val) {
+        const stepMin = this.step.duration
+          ? Math.floor(this.step.duration / 60)
+          : 0;
+        this.step.duration = stepMin * 60 + parseInt(val);
+        console.log("Seconds: ", this.step.duration);
+      },
     },
   },
 };

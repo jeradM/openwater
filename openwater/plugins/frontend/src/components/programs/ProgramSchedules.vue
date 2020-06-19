@@ -15,7 +15,7 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn color="accent">Add Schedule</v-btn>
+        <v-btn @click="addSchedule()" color="accent">Add Schedule</v-btn>
       </v-card-actions>
     </v-card>
   </fragment>
@@ -28,6 +28,16 @@ export default {
   components: { ProgramSchedule },
   props: {
     schedules: Array,
+  },
+  methods: {
+    addSchedule() {
+      this.schedules.push({
+        name: "New Schedule",
+        schedule_type: "Weekly",
+        at: 0,
+        enabled: true,
+      });
+    },
   },
 };
 </script>

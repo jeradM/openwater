@@ -98,6 +98,21 @@ class OWDatabase:
         except Exception:
             return False
 
+    async def delete_many(self, table: DBModel, where: Any) -> int:
+        """
+        Delete from table with a where clause
+        :param table: the target table
+        :param where: the condition
+        :return: Num row deleted, or -1 if an error occurs
+        """
+        try:
+            query = table.delete.where(where)
+            res = await self.connection.execute(query=query)
+            return res
+        except Exception as e:
+            _LOGGER.error(e)
+            return -1
+
     @property
     def connection(self) -> Database:
         return self._database

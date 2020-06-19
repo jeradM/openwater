@@ -51,7 +51,7 @@
     </v-navigation-drawer>
 
     <v-content app>
-      <v-sheet class="px-4 pt-8">
+      <v-sheet class="pa-6">
         <router-view></router-view>
       </v-sheet>
     </v-content>

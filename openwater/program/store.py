@@ -1,7 +1,8 @@
 from typing import TYPE_CHECKING, Set, Dict, Collection, List
 
+from openwater.constants import EVENT_PROGRAM_STATE
 from openwater.database import model
-from openwater.errors import ProgramException
+from openwater.errors import ProgramException, ProgramValidationException
 from openwater.program.helpers import (
     insert_program,
     update_program,
@@ -13,6 +14,7 @@ from openwater.program.helpers import (
 )
 from openwater.program.model import BaseProgram, ProgramSchedule, ProgramStep
 from openwater.program.registry import ProgramRegistry
+from openwater.program.validation import validate_program
 from openwater.utils.decorator import nonblocking
 
 if TYPE_CHECKING:
@@ -33,11 +35,11 @@ class ProgramStore:
 
     @property
     def schedules(self) -> List[ProgramSchedule]:
-        return [s for p in self.programs for s in p.schedules]
+        return [s for s in self.schedules_.values()]
 
     @property
     def steps(self) -> List[ProgramStep]:
-        return [s for p in self.programs for s in p.steps]
+        return [s for s in self.steps_.values()]
 
     @nonblocking
     def get_program(self, id_: int) -> BaseProgram:
@@ -76,24 +78,36 @@ class ProgramStore:
 
     async def create_program(self, data: Dict) -> BaseProgram:
         """Create a new zone and insert database record"""
-        id_ = await insert_program(self._ow, data)
 
+        errors = validate_program(data)
+        if errors:
+            raise ProgramValidationException("Program validation failed", errors)
+
+        id_ = await insert_program(self._ow, data)
+        data["id"] = id_
         program_type = self._registry.get_program_for_type(data["program_type"])
         program = program_type.create(self._ow, data)
         program.id = id_
-
-        # self._ow.bus.fire(EVENT_ZONE_ADDED, program.to_dict())
         self.programs_[id_] = program
+
+        self._ow.bus.fire(EVENT_PROGRAM_STATE, program)
 
         return program
 
     async def update_program(self, data: Dict) -> BaseProgram:
         """Update an existing program and update database record"""
+        errors = validate_program(data)
+        if errors:
+            raise ProgramValidationException("Program validation failed", errors)
+
         await update_program(self._ow, data)
 
         program_type = self._registry.get_program_for_type(data["program_type"])
         program = program_type.create(self._ow, data)
         self.programs_[program.id] = program
+
+        self._ow.bus.fire(EVENT_PROGRAM_STATE, program)
+
         return program
 
     async def delete_program(self, program_id: int):

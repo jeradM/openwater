@@ -5,7 +5,7 @@ from starlette.endpoints import HTTPEndpoint
 from starlette.responses import JSONResponse
 
 from openwater.core import OpenWater
-from openwater.plugins.rest_api import program, zone, schedule
+from openwater.plugins.rest_api import program, zone, schedule, steps
 from openwater.plugins.rest_api.helpers import ToDictJSONResponse, respond
 from openwater.utils import plugin
 
@@ -22,6 +22,7 @@ def init_endpoints(ow: OpenWater):
     zone.register_endpoints(ow)
     program.register_endpoints(ow)
     schedule.register_endpoints(ow)
+    steps.register_endpoints(ow)
     ow.http.register_route(
         "/api/schema", openapi_schema, methods=["GET"], include_in_schema=False
     )

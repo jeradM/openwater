@@ -14,23 +14,12 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def register_endpoints(ow: "OpenWater") -> None:
-    ow.http.register_route("/api/schedules", get_schedules, methods=["GET"])
-    ow.http.register_route("/api/schedule_types", get_schedule_types, methods=["GET"])
+    ow.http.register_route("/api/steps", get_steps, methods=["GET"])
 
 
-async def get_schedule_types(request: Request) -> Response:
-    return respond([st.value for st in ScheduleType])
-
-
-async def get_schedules(request: Request) -> Response:
+async def get_steps(request: Request) -> Response:
     ow: "OpenWater" = request.app.ow
-    return respond(ow.programs.store.schedules)
-
-
-async def get_schedules_for_program(request: Request) -> Response:
-    ow: "OpenWater" = request.app.ow
-    id_ = request.path_params["id"]
-    return respond(await ow.programs.store.get_schedules(id_))
+    return respond(ow.programs.store.steps)
 
 
 async def create_schedule(request: Request) -> Response:

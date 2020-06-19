@@ -10,6 +10,14 @@ class ProgramException(OWError):
     pass
 
 
+class ProgramValidationException(ProgramException):
+    """ Invalid program data, raised during save"""
+
+    def __init__(self, msg, errors):
+        super().__init__(msg)
+        self.errors = errors
+
+
 class ZoneException(OWError):
     """Raised by a zone"""
 

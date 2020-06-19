@@ -49,8 +49,8 @@ class ZoneStore:
         if errors["attrs"]:
             raise ZoneValidationException("Zone attribute validation failed", errors)
         id_ = await insert_zone(self._ow, data)
+        data["id"] = id_
         zone = zone_type.create(self._ow, data)
-        zone.id = id_
         self.zones_[zone.id] = zone
 
         self._ow.bus.fire(EVENT_ZONE_STATE, zone)

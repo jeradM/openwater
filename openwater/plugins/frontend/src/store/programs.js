@@ -9,8 +9,9 @@ const getters = {
     return state.all.reduce((obj, item) => ((obj[item.id] = item), obj), {});
   },
   programSchedules(state) {
-    return (programId) =>
-      state.schedules.filter((s) => s.program_id === programId);
+    return (programId) => {
+      return state.schedules.filter((s) => s.program_id === programId);
+    };
   },
   programSteps(state) {
     return (programId) => state.steps.filter((s) => s.program_id === programId);

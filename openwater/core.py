@@ -54,6 +54,8 @@ class OpenWater:
             "status": self.status,
             "zones": self.zones.store.zones,
             "programs": self.programs.store.programs,
+            "steps": self.programs.store.steps,
+            "schedules": self.programs.store.schedules,
         }
 
     def fire_coroutine(self, c: Coroutine) -> None:

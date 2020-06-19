@@ -15,8 +15,8 @@ class BaseProgram(ABC):
         self,
         id: int,
         name: str,
-        steps: List["ProgramStep"] = None,
-        schedules: Collection["ProgramSchedule"] = None,
+        steps: List["ProgramStep"] = [],
+        schedules: Collection["ProgramSchedule"] = [],
     ):
         self.id = id
         self.name = name
@@ -30,8 +30,9 @@ class BaseProgram(ABC):
             "name": self.name,
             "program_type": self.program_type(),
             "is_running": self.is_running,
-            "steps": self.steps,
-            "schedules": self.schedules,
+            "steps": [s.id for s in self.steps],
+            "schedules": [s.id for s in self.schedules],
+            "attrs": {},
         }
 
     def to_db(self) -> dict:
@@ -79,7 +80,7 @@ class ProgramStep:
             "duration": self.duration,
             "program_id": self.program_id,
             "order": self.order,
-            "zones": self.zones,
+            "zones": [z.id for z in self.zones],
         }
 
     def to_db(self):
@@ -165,7 +166,8 @@ class ProgramSchedule:
         *,
         id: int,
         program_id: int,
-        schedule_type: str,
+        schedule_type: str = "Weekly",
+        name: str = None,
         enabled: bool = False,
         at: int = None,  # minutes
         day_interval: int = None,  # re-run every n days
@@ -175,17 +177,18 @@ class ProgramSchedule:
         on_day: date = None,  # for single run program
         start_day: date = None  # for interval program
     ):
-        if dow_mask:
+        if schedule_type == "Weekly":
             self.type = ScheduleType.WEEKLY
-        elif start_day:
+        elif schedule_type == "Interval":
             self.type = ScheduleType.INTERVAL
-        elif on_day:
+        elif self.type == "Single":
             self.type = ScheduleType.SINGLE
         else:
             raise ProgramException("Invalid schedule definition")
 
         self.id = id
         self.program_id = program_id
+        self.name = name
         self.enabled = enabled
         self.at = at
         self.dow_mask = dow_mask
@@ -200,6 +203,7 @@ class ProgramSchedule:
             "id": self.id,
             "program_id": self.program_id,
             "schedule_type": self.type.value,
+            "name": self.name,
             "enabled": self.enabled,
             "at": self.at,
             "day_interval": self.day_interval,

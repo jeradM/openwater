@@ -37,54 +37,35 @@
         </v-row>
       </v-card-text>
     </v-card>
-    <ProgramSteps :steps="program.steps" />
-    <ProgramSchedules :schedules="program.schedules" />
   </v-form>
 </template>
 
 <script>
-import { EventBus } from "../../utils/event-bus";
-import ProgramSteps from "./ProgramSteps";
-import ProgramSchedules from "./ProgramSchedules";
-
 export default {
   name: "ProgramForm",
-  components: { ProgramSteps, ProgramSchedules },
   data: () => ({
     errors: {},
   }),
   props: {
     program: Object,
   },
+  computed: {},
   methods: {
-    async save() {
-      // const resp = await saveZone(this.zone);
-      // const result = await resp.json();
-      // if (resp.status !== 200) {
-      //   this.errors = result.errors;
-      //   return;
-      // }
-      console.log(this.program);
-      this.goBack();
-      // this.errors = {};
-      EventBus.$emit("snackbar", {
-        msg: `Program ${this.program.id ? "Updated" : "Saved"}`,
-      });
-    },
-    async deleteProgram() {
-      this.goBack();
-      // const res = await deleteZone(this.zone);
-      // const success = res.status === 204;
-      // const msg = success ? "Zone Deleted" : "Unable to delete zone";
-      // const type = success ? "success" : "error";
-      // EventBus.$emit("snackbar", { msg, type });
-    },
-    goBack() {
-      this.$router.go(-1);
-    },
-  },
-  mounted() {
-    this.$store.commit("setSaveFunc", this.save);
+    // async save() {
+    //   console.log(this.program);
+    //   await saveProgram(this.program, this.steps, this.schedules);
+    //   this.goBack();
+    //   // this.errors = {};
+    //   EventBus.$emit("snackbar", {
+    //     msg: `Program ${this.program.id ? "Updated" : "Saved"}`,
+    //   });
+    // },
+    // async deleteProgram() {
+    //   this.goBack();
+    // },
+    // goBack() {
+    //   this.$router.go(-1);
+    // },
   },
 };
 </script>

@@ -1,8 +1,8 @@
-"""'init_schema_v1'
+"""'init'
 
-Revision ID: 3a9ce24f77e3
+Revision ID: 3b94280b1630
 Revises: 
-Create Date: 2020-06-08 18:55:41.778173
+Create Date: 2020-06-18 19:43:07.331748
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = "3a9ce24f77e3"
+revision = "3b94280b1630"
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -92,6 +92,8 @@ def upgrade():
         "schedule",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("program_id", sa.Integer(), nullable=False),
+        sa.Column("schedule_type", sa.String(length=15), nullable=True),
+        sa.Column("name", sa.String(length=50), nullable=True),
         sa.Column("enabled", sa.Boolean(name="enabled_bool"), nullable=False),
         sa.Column("at", sa.Integer(), nullable=False),
         sa.Column("day_interval", sa.Integer(), nullable=True),

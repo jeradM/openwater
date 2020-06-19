@@ -79,14 +79,14 @@ async def populate_db(ow: "OpenWater"):
         await conn.execute(t.delete())
 
     try:
-        await conn.execute(zone.insert(), get_master_data())
-        await conn.execute_many(zone.insert(), get_zone_data())
-        await conn.execute_many(zone_run.insert(), get_zone_run_data())
-        await conn.execute_many(master_zone_join.insert(), get_master_zone_join_data())
-        await conn.execute_many(program.insert(), get_program_data())
-        await conn.execute_many(program_step.insert(), get_program_step_data())
-        await conn.execute_many(program_step_zones.insert(), get_step_zones_data())
-        await conn.execute_many(schedule.insert(), get_schedules_data())
+        # await conn.execute(zone.insert(), get_master_data())
+        # await conn.execute_many(zone.insert(), get_zone_data())
+        # await conn.execute_many(zone_run.insert(), get_zone_run_data())
+        # await conn.execute_many(master_zone_join.insert(), get_master_zone_join_data())
+        # await conn.execute_many(program.insert(), get_program_data())
+        # await conn.execute_many(program_step.insert(), get_program_step_data())
+        # await conn.execute_many(program_step_zones.insert(), get_step_zones_data())
+        # await conn.execute_many(schedule.insert(), get_schedules_data())
 
         query = plugin_config.insert()
         values = {
