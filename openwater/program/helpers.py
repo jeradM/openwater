@@ -6,7 +6,7 @@ from databases.core import Transaction
 from openwater.database import model
 from openwater.database.model import program_step, program_step_zones
 from openwater.errors import OWError
-from openwater.program.model import ProgramSchedule, ProgramStep
+from openwater.program.model import ProgramStep
 
 if TYPE_CHECKING:
     from openwater.core import OpenWater
@@ -14,26 +14,15 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-async def load_schedules(ow: "OpenWater"):
-    rows = await ow.db.list(model.schedule)
-    for row in rows:
-        data = dict(row)
-        ow.programs.store.add_schedule(ProgramSchedule(**data))
-
-
 async def load_programs(ow: "OpenWater"):
-    print("load programs")
     if not ow.db:
         raise OWError("OpenWater database not initialized")
 
-    schedules = [ProgramSchedule(**dict(s)) for s in await ow.db.list(model.schedule)]
     steps = [ProgramStep(**dict(s)) for s in await ow.db.list(model.program_step)]
     step_zones: Any = await ow.db.list(model.program_step_zones)
     for step in steps:
         step.zones = [
-            ow.zones.store.get_zone(sz.zone_id)
-            for sz in step_zones
-            if sz.step_id == step.id
+            ow.zones.store.get(sz.zone_id) for sz in step_zones if sz.step_id == step.id
         ]
 
     programs: Any = await ow.db.list(model.program)
@@ -46,24 +35,19 @@ async def load_programs(ow: "OpenWater"):
         if program_type is None:
             continue
         p = program_type.create(ow, program)
-        ow.programs.store.add_program(p)
-        p.schedules = [s for s in schedules if s.program_id == p.id]
+        ow.programs.store.add(p)
         p.steps = [s for s in steps if s.program_id == p.id]
 
 
 async def insert_program(ow: "OpenWater", data: dict) -> int:
     tx = await ow.db.connection.transaction()
-    schedules = data.pop("schedules")
     steps = data.pop("steps")
     res = await ow.db.insert(model.program, data)
-
-    for s in schedules:
-        await insert_schedule(ow, s, res)
 
     for s in steps:
         if await insert_step(ow, s, res) == -1:
             await tx.rollback()
-            return -1
+            return 0
 
     await tx.commit()
     return res
@@ -71,7 +55,6 @@ async def insert_program(ow: "OpenWater", data: dict) -> int:
 
 async def update_program(ow: "OpenWater", data: dict) -> bool:
     tx = await ow.db.connection.transaction().start()
-    schedules = data.pop("schedules")
     steps = data.pop("steps")
     res = await ow.db.update(model.program, data)
     if not res:
@@ -87,9 +70,7 @@ async def update_program(ow: "OpenWater", data: dict) -> bool:
 
 
 async def delete_program(ow: "OpenWater", id_: int) -> int:
-    conn = ow.db.connection
-    query = model.program.delete().where(model.program.c.id == id_)
-    return await conn.execute(query=query)
+    return await ow.db.delete(model.program, id_)
 
 
 async def get_program_schedules(ow: "OpenWater", program_id: int) -> Collection[dict]:
@@ -97,26 +78,6 @@ async def get_program_schedules(ow: "OpenWater", program_id: int) -> Collection[
     query = model.schedule.select().where(model.schedule.c.program_id == program_id)
     rows = await conn.fetch_all(query)
     return [dict(row) for row in rows]
-
-
-async def insert_schedule(ow: "OpenWater", data: dict, program_id: int = None) -> int:
-    if program_id is not None:
-        data["program_id"] = program_id
-    conn = ow.db.connection
-    query = model.schedule.insert()
-    return await conn.execute(query=query, values=data)
-
-
-async def update_schedule(ow: "OpenWater", data):
-    conn = ow.db.connection
-    query = model.schedule.update().where(model.schedule.c.id == data["id"])
-    return await conn.execute(query=query, values=data)
-
-
-async def delete_schedule(ow: "OpenWater", schedule_id: int) -> int:
-    conn = ow.db.connection
-    query = model.schedule.delete().where(model.schedule.c.id == schedule_id)
-    return await conn.execute(query=query)
 
 
 async def insert_steps(ow: "OpenWater", data: list) -> bool:
@@ -143,7 +104,7 @@ async def insert_step(ow: "OpenWater", data: dict, program_id: int = None) -> in
     except Exception as e:
         _LOGGER.error("Error inserting step: %s", e)
         await tx.rollback()
-        return -1
+        return 0
 
 
 async def update_steps(ow: "OpenWater", data: list) -> bool:

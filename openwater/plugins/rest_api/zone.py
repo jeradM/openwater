@@ -41,7 +41,7 @@ class Zone(HTTPEndpoint):
             description: A zone
         """
         ow: "OpenWater" = request.app.ow
-        zone = ow.zones.store.get_zone(request.path_params["zone_id"])
+        zone = ow.zones.store.get(request.path_params["zone_id"])
         return respond(zone)
 
     async def put(self, request):
@@ -49,7 +49,7 @@ class Zone(HTTPEndpoint):
         ow: "OpenWater" = request.app.ow
         data = await request.json()
         try:
-            zone = await ow.zones.store.update_zone(data)
+            zone = await ow.zones.store.update(data)
         except ZoneValidationException as e:
             _LOGGER.error("Zone update failed validation")
             return respond({"errors": e.errors, "msg": "Invalid zone data"}, 400)
@@ -57,7 +57,7 @@ class Zone(HTTPEndpoint):
 
     async def delete(self, request):
         ow: "OpenWater" = request.app.ow
-        res = await ow.zones.store.delete_zone(request.path_params["zone_id"])
+        res = await ow.zones.store.delete(request.path_params["zone_id"])
         sc = 204 if res else 400
         return respond(status_code=sc)
 
@@ -70,7 +70,7 @@ async def get_zones(request):
         description: A list of zones.
     """
     ow: "OpenWater" = request.app.ow
-    return respond(ow.zones.store.zones)
+    return respond(ow.zones.store.all)
 
 
 async def create_zone(request: Request):
@@ -85,7 +85,7 @@ async def create_zone(request: Request):
     ow: "OpenWater" = request.app.ow
     data = await request.json()
     try:
-        zone = await ow.zones.store.create_zone(data)
+        zone = await ow.zones.store.create(data)
     except ZoneValidationException as e:
         _LOGGER.error("Create zone failed validation")
         return ToDictJSONResponse(

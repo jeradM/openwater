@@ -2,7 +2,8 @@ import logging
 from typing import TYPE_CHECKING, Optional
 
 from openwater.constants import EVENT_TIMER_TICK_MIN, EVENT_PROGRAM_COMPLETED
-from openwater.program.model import BaseProgram, ProgramSchedule
+from openwater.program.model import BaseProgram
+from openwater.schedule.model import ProgramSchedule
 
 if TYPE_CHECKING:
     from openwater.core import OpenWater, Event
@@ -22,7 +23,7 @@ class Scheduler:
             return
 
         dt = event.data["now"]
-        schedules = self.ow.programs.store.schedules
+        schedules = self.ow.schedules.store.all
         run_schedule = None
         for schedule in schedules:
             _LOGGER.debug("Checking schedule %s", schedule.id)
@@ -34,9 +35,7 @@ class Scheduler:
             _LOGGER.debug("No schedules to run")
             return
 
-        self.running_program = self.ow.programs.store.get_program(
-            run_schedule.program_id
-        )
+        self.running_program = self.ow.programs.store.get(run_schedule.program_id)
         self.ow.fire_coroutine(
             self.ow.programs.controller.run_program(self.running_program)
         )

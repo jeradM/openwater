@@ -67,6 +67,10 @@ const routes = [
     ],
   },
   {
+    path: "/schedules",
+    component: () => import("../views/schedule/Schedules"),
+  },
+  {
     path: "/zones",
     component: () =>
       import(

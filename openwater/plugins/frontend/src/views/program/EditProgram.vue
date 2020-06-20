@@ -23,7 +23,7 @@ export default {
   components: { ProgramForm, ProgramSteps, ProgramSchedules },
   methods: {
     async save() {
-      await saveProgram(this.program, this.steps, this.schedules);
+      await saveProgram(this.program, this.steps);
       this.$router.go(-1);
       EventBus.$emit("snackbar", {
         msg: "Program Updated",

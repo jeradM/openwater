@@ -85,8 +85,13 @@ export default {
     views: [
       { title: "Dashboard", icon: "mdi-view-dashboard", to: "/" },
       { title: "Calendar", icon: "mdi-calendar-month", to: "/calendar" },
-      { title: "Programs", icon: "mdi-clock", to: "/programs" },
       { title: "Zones", icon: "mdi-sprinkler-variant", to: "/zones" },
+      {
+        title: "Programs",
+        icon: "mdi-clipboard-list-outline",
+        to: "/programs",
+      },
+      { title: "Schedules", icon: "mdi-calendar-clock", to: "/schedules" },
       { title: "Plugins", icon: "mdi-toy-brick", to: "/plugins" },
     ],
   }),
