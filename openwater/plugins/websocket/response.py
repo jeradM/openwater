@@ -10,6 +10,30 @@ class WebsocketResponse:
         raise NotImplementedError
 
 
+class ProgramsResponse(WebsocketResponse):
+    def __init__(self, programs, steps):
+        super().__init__(type="state.programs")
+        self.programs = programs
+        self.steps = steps
+
+    @property
+    def data(self):
+        return {
+            "programs": self.programs,
+            "steps": self.steps,
+        }
+
+
+class SchedulesResponse(WebsocketResponse):
+    def __init__(self, schedules):
+        super().__init__(type="state.schedules")
+        self.schedules = schedules
+
+    @property
+    def data(self):
+        return {"schedules": self.schedules}
+
+
 class ZonesResponse(WebsocketResponse):
     def __init__(self, zones):
         super().__init__(type="state.zones")
@@ -18,19 +42,3 @@ class ZonesResponse(WebsocketResponse):
     @property
     def data(self):
         return {"zones": self.zones}
-
-
-class ProgramsResponse(WebsocketResponse):
-    def __init__(self, programs, schedules, steps):
-        super().__init__(type="state.programs")
-        self.programs = programs
-        self.steps = steps
-        self.schedules = schedules
-
-    @property
-    def data(self):
-        return {
-            "programs": self.programs,
-            "schedules": self.schedules,
-            "steps": self.steps,
-        }

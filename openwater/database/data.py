@@ -72,6 +72,7 @@ def get_schedules_data():
             "at": int(6.5 * 60),
             "dow_mask": 86,
             "days_restriction": "E",
+            "schedule_type": "Weekly",
         },
         {
             "program_id": 1,
@@ -79,5 +80,6 @@ def get_schedules_data():
             "at": int(14.75 * 60),
             "start_day": datetime.date(2020, 6, 5),
             "day_interval": 3,
+            "schedule_type": "Interval",
         },
     ]

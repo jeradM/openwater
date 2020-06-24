@@ -36,7 +36,7 @@
 </template>
 
 <script>
-import { durationToString, formatDateStr } from "../../utils/datetime";
+import { secondsToDurationString, formatDateStr } from "../../utils/datetime";
 
 const sendZoneCmd = async (id, cmd) => {
   return await fetch(`http://localhost:8000/api/zones/${id}/${cmd}`, {
@@ -62,7 +62,7 @@ export default {
       if (!this.zone.last_run) return "No runs recorded";
       const run = this.zone.last_run;
       const dateStr = formatDateStr(run.start);
-      const duration = durationToString(run.duration);
+      const duration = secondsToDurationString(run.duration);
       return `Last Run: ${dateStr} for ${duration}`;
     },
     color() {

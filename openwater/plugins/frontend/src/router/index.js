@@ -67,6 +67,41 @@ const routes = [
     ],
   },
   {
+    path: "/schedules",
+    component: () => import("../views/schedule/SchedulesView.vue"),
+    children: [
+      {
+        path: "",
+        name: "programs",
+        meta: {
+          title: "Schedules",
+        },
+        component: () =>
+          import(
+            /* webpackChunkName: "schedules" */ "../views/schedule/Schedules.vue"
+          ),
+      },
+      {
+        path: "edit/:id",
+        name: "edit_schedule",
+        meta: {
+          title: "Edit Schedule",
+          save: true,
+        },
+        component: () => import("../views/schedule/EditSchedule"),
+      },
+      {
+        path: "add",
+        name: "add_schedule",
+        meta: {
+          title: "Add Schedule",
+          save: true,
+        },
+        component: () => import("../views/schedule/AddSchedule"),
+      },
+    ],
+  },
+  {
     path: "/zones",
     component: () =>
       import(

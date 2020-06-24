@@ -18,28 +18,25 @@ class ZoneStore:
         self.zones_ = dict()
 
     @property
-    def zones(self):
+    def all(self):
         return list(self.zones_.values())
 
-    def get_zone(self, id_: int) -> Optional[BaseZone]:
+    def get(self, id_: int) -> Optional[BaseZone]:
         """Get a zone from the store by id"""
-        zone = self.zones_.get(id_, None)
-        return zone
+        return self.zones_.get(id_, None)
 
-    def add_zone(self, zone: BaseZone):
+    def add(self, zone: BaseZone):
         """Add a new zone to the store"""
-        z = self.get_zone(zone.id)
-        if z:
-            raise ZoneException("Zone {} already exists")
         self.zones_[zone.id] = zone
 
-    def remove_zone(self, zone: BaseZone):
+    def remove(self, zone: BaseZone):
         """Remove a zone from the store"""
-        if zone not in self.zones:
-            raise ZoneException("Zone {} not found".format(zone.id))
-        self.zones_.pop(zone.id)
+        try:
+            return self.zones_.pop(zone.id)
+        except KeyError:
+            return None
 
-    async def create_zone(self, data: Dict) -> BaseZone:
+    async def create(self, data: Dict) -> BaseZone:
         """Create a new zone and insert database record"""
         errors = validate_zone(data)
         if errors:
@@ -56,7 +53,7 @@ class ZoneStore:
         self._ow.bus.fire(EVENT_ZONE_STATE, zone)
         return zone
 
-    async def update_zone(self, data: Dict) -> BaseZone:
+    async def update(self, data: Dict) -> BaseZone:
         """Update an existing zone and update database record"""
         errors = validate_zone(data)
         if errors:
@@ -69,16 +66,16 @@ class ZoneStore:
 
         await update_zone(self._ow, data)
         zone = zone_type.create(self._ow, data)
-        zone_ = self.get_zone(data["id"])
+        zone_ = self.get(data["id"])
         zone.last_run = zone_.last_run
         self.zones_[zone.id] = zone
 
         self._ow.bus.fire(EVENT_ZONE_STATE, zone)
         return zone
 
-    async def delete_zone(self, zone_id: int) -> int:
+    async def delete(self, zone_id: int) -> int:
         """Delete a zone from the store and remove database record"""
         result = await delete_zone(self._ow, zone_id)
-        self.remove_zone(self.get_zone(zone_id))
+        self.remove(self.get(zone_id))
         self._ow.bus.fire(EVENT_ZONE_STATE, {"zone_id": zone_id})
         return result

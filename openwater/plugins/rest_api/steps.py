@@ -1,11 +1,10 @@
 import logging
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
+from starlette.responses import Response
 
 from openwater.plugins.rest_api.helpers import ToDictJSONResponse, respond
-from openwater.program.model import ScheduleType
 
 if TYPE_CHECKING:
     from openwater.core import OpenWater
@@ -34,7 +33,7 @@ async def create_schedule(request: Request) -> Response:
     ow: "OpenWater" = request.app.ow
     data = await request.json()
     try:
-        zone = await ow.programs.store.create_program(data)
+        zone = await ow.programs.store.create(data)
     except Exception as e:
         _LOGGER.error("Create zone failed validation")
         return ToDictJSONResponse(

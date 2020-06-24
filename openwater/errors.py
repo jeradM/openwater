@@ -18,6 +18,16 @@ class ProgramValidationException(ProgramException):
         self.errors = errors
 
 
+class ScheduleException(OWError):
+    pass
+
+
+class ScheduleValidationException(ScheduleException):
+    def __init__(self, msg, errors):
+        super().__init__(msg)
+        self.errors = errors
+
+
 class ZoneException(OWError):
     """Raised by a zone"""
 

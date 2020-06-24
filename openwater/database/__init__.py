@@ -68,7 +68,7 @@ class OWDatabase:
         try:
             return await self.connection.execute(query=table.insert(), values=data)
         except Exception:
-            return -1
+            return 0
 
     async def update(self, table: DBModel, data: dict) -> bool:
         """
@@ -77,12 +77,9 @@ class OWDatabase:
         :param data: the values to update
         :return: True if successful, otherwise False
         """
-        try:
-            query = table.update().where(table.c.id == data["id"])
-            res = await self.connection.execute(query=query, values=data)
-            return res != 0
-        except Exception:
-            return False
+        query = table.update().where(table.c.id == data["id"])
+        res = await self.connection.execute(query=query, values=data)
+        return res != 0
 
     async def delete(self, table: DBModel, id_: int) -> bool:
         """

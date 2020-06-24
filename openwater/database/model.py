@@ -144,6 +144,8 @@ schedule = Table(
     Column("minute_interval", Integer),
     Column("on_day", Date),
     Column("start_day", Date),
+    Column("repeat_every", Integer),
+    Column("repeat_until", Integer),
 )
 
 log_entry = Table(

@@ -4,7 +4,7 @@
     <v-card class="mb-6">
       <v-card-text>
         <v-list>
-          <draggable :list="steps">
+          <draggable :list="steps" :options="{ animation: 250 }">
             <ProgramStep
               v-for="(step, idx) in steps"
               :step="step"

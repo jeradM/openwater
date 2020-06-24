@@ -1,17 +1,11 @@
 const state = () => ({
   all: [],
   steps: [],
-  schedules: [],
 });
 
 const getters = {
   programObj(state) {
     return state.all.reduce((obj, item) => ((obj[item.id] = item), obj), {});
-  },
-  programSchedules(state) {
-    return (programId) => {
-      return state.schedules.filter((s) => s.program_id === programId);
-    };
   },
   programSteps(state) {
     return (programId) => state.steps.filter((s) => s.program_id === programId);
@@ -27,10 +21,8 @@ const mutations = {
   setPrograms(state, programs) {
     state.all = programs;
   },
-  setSchedules(state, schedules) {
-    state.schedules = schedules;
-  },
   setSteps(state, steps) {
+    console.log("Set steps: ", steps);
     state.steps = steps;
   },
 };

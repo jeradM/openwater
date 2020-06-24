@@ -1,8 +1,4 @@
-export const saveProgram = async (
-  { id, name, program_type, attrs },
-  steps,
-  schedules
-) => {
+export const saveProgram = async ({ id, name, program_type, attrs }, steps) => {
   let url = `http://${location.host}/api/programs`;
   if (id) url += `/${id}`;
   const method = id ? "put" : "post";
@@ -17,7 +13,6 @@ export const saveProgram = async (
       program_type,
       attrs,
       steps,
-      schedules,
     }),
   });
 };

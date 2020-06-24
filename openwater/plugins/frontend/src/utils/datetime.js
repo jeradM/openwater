@@ -12,6 +12,24 @@ export const formatDateStr = (dateStr, length = "medium") => {
   return dateToString(d, length);
 };
 
+export const secondsToTimeString = (seconds, ampm = true) => {
+  let secs = (seconds % 60).toString();
+  if (secs.length < 2) {
+    secs = `0${secs}`;
+  }
+  let hrs = Math.floor(seconds / 60);
+  const pm = hrs > 11;
+  if (ampm) {
+    if (hrs === 0) hrs = 12;
+    hrs = hrs > 12 ? hrs - 12 : hrs;
+  }
+  let result = `${hrs}:${secs}`;
+  if (ampm) {
+    result += pm ? " pm" : " am";
+  }
+  return result;
+};
+
 export const dateToString = (date, length = "medium") => {
   let formatStr;
   if (length === "long") formatStr = "MMMM do, yyyy";
@@ -20,7 +38,11 @@ export const dateToString = (date, length = "medium") => {
   return format(date, formatStr);
 };
 
-export const durationToString = (durationSec, length = "medium") => {
+export const minutesToDurationString = (durationMin, length = "medium") => {
+  return secondsToDurationString(durationMin * 60, length);
+};
+
+export const secondsToDurationString = (durationSec, length = "medium") => {
   const h = Math.floor(durationSec / SEC_PER_HOUR);
   const m = Math.floor((durationSec % SEC_PER_HOUR) / SEC_PER_MIN);
   const s = Math.floor(durationSec % SEC_PER_MIN);

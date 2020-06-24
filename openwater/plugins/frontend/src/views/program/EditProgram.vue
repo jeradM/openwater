@@ -18,25 +18,27 @@ export default {
   data: () => ({
     program: {},
     steps: [],
-    schedules: [],
   }),
   components: { ProgramForm, ProgramSteps, ProgramSchedules },
   methods: {
     async save() {
-      await saveProgram(this.program, this.steps, this.schedules);
+      await saveProgram(this.program, this.steps);
       this.$router.go(-1);
       EventBus.$emit("snackbar", {
         msg: "Program Updated",
       });
     },
   },
+  computed: {
+    schedules() {
+      return this.$store.getters["schedules/forProgram"](this.program.id);
+    },
+  },
   beforeMount() {
     const id = parseInt(this.$route.params.id);
     const programs = this.$store.getters["programs/programObj"];
-    const schedules = this.$store.getters["programs/programSchedules"](id);
     const steps = this.$store.getters["programs/programSteps"](id);
     this.program = JSON.parse(JSON.stringify(programs[id]));
-    this.schedules = JSON.parse(JSON.stringify(schedules));
     this.steps = JSON.parse(JSON.stringify(steps));
   },
   mounted() {

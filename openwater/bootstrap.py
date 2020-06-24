@@ -4,6 +4,7 @@ from openwater.core import OpenWater
 from openwater.database import OWDatabase
 from openwater.ow_http import setup_http
 from openwater.program.helpers import load_programs
+from openwater.schedule.helpers import load_schedules
 from openwater.utils import plugin
 from openwater.zone.helpers import load_zones
 
@@ -44,5 +45,6 @@ async def setup(ow: OpenWater) -> int:
     await plugin.load_plugins(CORE_PLUGINS, ow)
     ow.bus.fire(EVENT_PLUGINS_COMPLETE)
     await load_zones(ow)
+    await load_schedules(ow)
     await load_programs(ow)
     return await ow.start()

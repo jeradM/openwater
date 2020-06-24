@@ -27,9 +27,9 @@ async def load_zones(ow: "OpenWater"):
             continue
         z = zone_type.create(ow, zone_)
         z.last_run = await load_last_run(ow, z.id)
-        ow.zones.store.add_zone(z)
+        ow.zones.store.add(z)
 
-    _LOGGER.debug("Loaded %d zones", len(ow.zones.store.zones))
+    _LOGGER.debug("Loaded %d zones", len(ow.zones.store.all))
 
     await load_masters(ow)
 
@@ -37,8 +37,8 @@ async def load_zones(ow: "OpenWater"):
 async def load_masters(ow: "OpenWater") -> None:
     rows = await ow.db.list(master_zone_join)
     for row in rows:
-        zone_ = ow.zones.store.get_zone(row[0])
-        master_ = ow.zones.store.get_zone(row[1])
+        zone_ = ow.zones.store.get(row[0])
+        master_ = ow.zones.store.get(row[1])
         if zone_.master_zones is None:
             zone_.master_zones = [master_]
         else:

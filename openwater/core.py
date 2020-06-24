@@ -18,6 +18,7 @@ from openwater.database import OWDatabase
 from openwater.ow_http import OWHttp
 from openwater.plugins.gpio import OWGpio
 from openwater.program import ProgramManager
+from openwater.schedule import ScheduleManager
 from openwater.scheduler import Scheduler
 from openwater.utils.decorator import is_nonblocking, nonblocking
 from openwater.utils.plugin import OWPlugin, PluginRegistry
@@ -36,8 +37,9 @@ class OpenWater:
         self.timer = Timer(self)
         self.db: "OWDatabase" = None
 
-        self.zones = ZoneManager(self)
         self.programs = ProgramManager(self)
+        self.schedules = ScheduleManager(self)
+        self.zones = ZoneManager(self)
 
         self.scheduler = Scheduler(self)
         self.plugins_: Dict[str, OWPlugin] = {}
@@ -52,10 +54,11 @@ class OpenWater:
     def to_dict(self):
         return {
             "status": self.status,
-            "zones": self.zones.store.zones,
-            "programs": self.programs.store.programs,
+            "zones": self.zones.store.all,
+            "programs": self.programs.store.all,
             "steps": self.programs.store.steps,
-            "schedules": self.programs.store.schedules,
+            "schedules": self.schedules.store.all,
+            "plugins": self.plugins.all,
         }
 
     def fire_coroutine(self, c: Coroutine) -> None:
