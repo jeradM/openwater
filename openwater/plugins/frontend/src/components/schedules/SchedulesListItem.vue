@@ -1,30 +1,17 @@
 <template>
-  <v-expansion-panel>
-    <v-expansion-panel-header>
-      <template v-slot:default>
-        <v-row>
-          <v-col cols="1" class="pa-1 d-flex">
-            <v-icon>mdi-calendar-clock</v-icon>
-          </v-col>
-          <v-col cols="11" class="pa-1">
-            <v-row>
-              <span class="subtitle-1">{{ title }}</span>
-            </v-row>
-          </v-col>
-        </v-row>
-      </template>
-    </v-expansion-panel-header>
-    <v-expansion-panel-content>
-      <v-card-actions>
-        <v-spacer></v-spacer>
-        <v-btn :to="editUrl" color="primary" text>Edit</v-btn>
-      </v-card-actions>
-    </v-expansion-panel-content>
-  </v-expansion-panel>
+  <v-list-item :to="editUrl" link>
+    <v-list-item-icon>
+      <v-icon>{{ icon }}</v-icon>
+    </v-list-item-icon>
+    <v-list-item-content>
+      <v-list-item-title>{{ title }}</v-list-item-title>
+      <v-list-item-subtitle>{{ subtitle }}</v-list-item-subtitle>
+    </v-list-item-content>
+  </v-list-item>
 </template>
 
 <script>
-import { getScheduleTitle } from "../../utils/schedules";
+import { getScheduleSubtitle, getScheduleTitle } from "../../utils/schedules";
 
 export default {
   name: "SchedulesListItem",
@@ -37,6 +24,19 @@ export default {
     },
     title() {
       return getScheduleTitle(this.schedule);
+    },
+    subtitle() {
+      return getScheduleSubtitle(this.schedule);
+    },
+    icon() {
+      switch (this.schedule.schedule_type) {
+        case "Weekly":
+          return "mdi-calendar-range";
+        case "Interval":
+          return "mdi-calendar-multiselect";
+        default:
+          return "mdi-calendar-today";
+      }
     },
   },
 };

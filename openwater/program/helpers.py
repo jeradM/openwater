@@ -19,6 +19,7 @@ async def load_programs(ow: "OpenWater"):
         raise OWError("OpenWater database not initialized")
 
     steps = [ProgramStep(**dict(s)) for s in await ow.db.list(model.program_step)]
+    ow.programs.store.set_steps(steps)
     step_zones: Any = await ow.db.list(model.program_step_zones)
     for step in steps:
         step.zones = [
@@ -54,7 +55,7 @@ async def insert_program(ow: "OpenWater", data: dict) -> int:
 
 
 async def update_program(ow: "OpenWater", data: dict) -> bool:
-    tx = await ow.db.connection.transaction().start()
+    tx = await ow.db.connection.transaction()
     steps = data.pop("steps")
     res = await ow.db.update(model.program, data)
     if not res:
@@ -95,16 +96,13 @@ async def insert_step(ow: "OpenWater", data: dict, program_id: int = None) -> in
     zones = data.pop("zones")
     if program_id is not None:
         data["program_id"] = program_id
-    tx: Transaction = await ow.db.connection.transaction()
     try:
         id_ = await ow.db.insert(program_step, data)
         for zone in zones:
             await ow.db.insert(program_step_zones, {"step_id": id_, "zone_id": zone})
-        await tx.commit()
     except Exception as e:
         _LOGGER.error("Error inserting step: %s", e)
-        await tx.rollback()
-        return 0
+        return -1
 
 
 async def update_steps(ow: "OpenWater", data: list) -> bool:
@@ -120,7 +118,6 @@ async def update_steps(ow: "OpenWater", data: list) -> bool:
 
 async def update_step(ow: "OpenWater", data: dict) -> int:
     zones = data.pop("zones")
-    # tx: Transaction = await ow.db.connection.transaction()
     try:
         ins_res = await ow.db.update(program_step, data)
         del_res = await ow.db.delete_many(
@@ -132,8 +129,7 @@ async def update_step(ow: "OpenWater", data: dict) -> int:
             await ow.db.insert(
                 program_step_zones, {"step_id": data["id"], "zone_id": zone}
             )
-        # await tx.commit()
         return ins_res
     except Exception as e:
-        # await tx.rollback()
+        _LOGGER.error(e)
         return -1

@@ -19,7 +19,7 @@ SCHEDULE_SCHEMA = {
     "days_restriction": {
         "type": "string",
         "nullable": True,
-        "allowed": ["E", "O", None],
+        "allowed": ["E", "O", "", None],
     },
     "dow_mask": {"type": "integer", "nullable": True, "min": 0, "max": 127},
     "minute_interval": {"type": "integer", "nullable": True},
@@ -30,6 +30,8 @@ SCHEDULE_SCHEMA = {
         "required": True,
         "allowed": ["Weekly", "Interval", "Single"],
     },
+    "repeat_every": {"type": "integer", "nullable": True},
+    "repeat_until": {"type": "integer", "nullable": True},
 }
 
 

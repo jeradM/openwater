@@ -7,7 +7,6 @@ export const saveZone = async ({
   close_offset,
   attrs,
 }) => {
-  debugger;
   const _is_master = !!is_master;
   let url = `http:///${location.host}/api/zones`;
   if (id) url += `/${id}`;

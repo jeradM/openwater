@@ -53,7 +53,7 @@ class BaseZone(ABC):
     def of(cls, ow: "OpenWater", data: Dict[str, Any]):
         return cls(
             ow=ow,
-            id_=data.get("id"),
+            id=data.get("id"),
             name=data["name"],
             zone_type=data["zone_type"],
             is_master=data["is_master"],

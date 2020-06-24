@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 DATA_GPIO = "GPIO"
 
 
-def setup_plugin(ow: "OpenWater", config: dict = {}):
+def setup_plugin(ow: "OpenWater", config: dict):
     toggle_print(False)
     ow.add_job(gpio.setmode, gpio.BCM)
     ow.data[DATA_GPIO] = OWGpio(ow)

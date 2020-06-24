@@ -1,17 +1,21 @@
 <template>
   <v-sheet>
     <v-btn
-      to="/programs/add"
+      to="/schedules/add"
       color="secondary"
       fab
-      absolute
+      fixed
       bottom
       right
-      class="mb-12 mr-2"
+      class="mr-2"
     >
       <v-icon>mdi-plus</v-icon>
     </v-btn>
-    <SchedulesList />
+    <v-sheet max-width="800" class="mx-auto">
+      <v-card>
+        <SchedulesList :schedules="schedules" />
+      </v-card>
+    </v-sheet>
   </v-sheet>
 </template>
 
@@ -21,6 +25,11 @@ import SchedulesList from "../../components/schedules/ScheduleList";
 export default {
   name: "Schedules",
   components: { SchedulesList },
+  computed: {
+    schedules() {
+      return this.$store.state.schedules.all;
+    },
+  },
 };
 </script>
 

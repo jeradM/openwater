@@ -2,10 +2,7 @@
   <v-app>
     <Websocket />
     <v-app-bar app clipped dark color="primary">
-      <v-app-bar-nav-icon
-        @click="drawer = !drawer"
-        class="d-lg-none"
-      ></v-app-bar-nav-icon>
+      <v-app-bar-nav-icon @click="drawer = !drawer" class="d-lg-none" />
       <v-toolbar-title>{{ routeName }}</v-toolbar-title>
       <v-spacer></v-spacer>
       <v-btn v-if="canSave" @click="saveFunc" text>Save</v-btn>
@@ -59,8 +56,16 @@
       v-model="snackbar.show"
       :color="snackbar.type"
       :timeout="snackbar.timeout"
-      >{{ snackbar.msg }}</v-snackbar
+      bottom
+      left
     >
+      {{ snackbar.msg }}
+      <template v-slot:action>
+        <v-btn text @click="snackbar.show = false">
+          Close
+        </v-btn>
+      </template>
+    </v-snackbar>
   </v-app>
 </template>
 

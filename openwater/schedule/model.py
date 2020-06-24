@@ -1,6 +1,6 @@
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from enum import Enum
-from typing import Union
+from typing import Union, Optional
 
 from openwater.errors import ScheduleException
 
@@ -32,7 +32,9 @@ class ProgramSchedule:
         dow_mask: int = 0,  # B2 - 0000001 S, 0000010 M, 0000100 T, ... 1000000 S
         minute_interval: int = None,  # re-run every n minutes
         on_day: Union[str, date] = None,  # for single run program
-        start_day: Union[str, date] = None  # for interval program
+        start_day: Union[str, date] = None,  # for interval program
+        repeat_every: Optional[int] = None,
+        repeat_until: Optional[int] = None,
     ):
         if schedule_type == "Weekly":
             self.type = ScheduleType.WEEKLY
@@ -54,6 +56,8 @@ class ProgramSchedule:
         self.minute_interval = minute_interval
         self.on_day: date = to_date(on_day)
         self.start_day: date = to_date(start_day)
+        self.repeat_every = repeat_every
+        self.repeat_until = repeat_until
 
     def to_dict(self) -> dict:
         return {
@@ -69,6 +73,8 @@ class ProgramSchedule:
             "minute_interval": self.minute_interval,
             "on_day": self.on_day,
             "start_day": self.start_day,
+            "repeat_every": self.repeat_every,
+            "repeat_until": self.repeat_until,
         }
 
     def to_db(self) -> dict:
@@ -91,6 +97,14 @@ class ProgramSchedule:
 
         time_mins = (dt.hour * 60) + dt.minute
         time_matches = time_mins == self.at and dt.second < 5
+
+        if (
+            time_matches is False
+            and self.repeat_every is not None
+            and self.repeat_until is not None
+            and self.repeat_until >= time_mins
+        ):
+            time_matches = self.at + self.repeat_every
 
         even = dt.day % 2 == 0
         if not self.days_restriction:

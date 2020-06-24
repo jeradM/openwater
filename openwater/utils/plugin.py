@@ -27,6 +27,9 @@ class PluginRegistry:
         self.all: Dict[str, "OWPlugin"] = {}
         self.enabled: Dict[str, Dict] = {}
 
+    def to_dict(self):
+        return self.all
+
     def enable_plugin(self, id_: str, config: Dict) -> None:
         if id_ in self.enabled:
             raise PluginException("Plugin already enabled: {}".format(id_))

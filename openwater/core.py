@@ -58,6 +58,7 @@ class OpenWater:
             "programs": self.programs.store.all,
             "steps": self.programs.store.steps,
             "schedules": self.schedules.store.all,
+            "plugins": self.plugins.all,
         }
 
     def fire_coroutine(self, c: Coroutine) -> None:

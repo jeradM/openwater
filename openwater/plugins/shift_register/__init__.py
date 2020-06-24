@@ -45,7 +45,6 @@ def create_zone(ow: "OpenWater", zone_data: dict) -> "ShiftRegisterZone":
     v.allow_unknown = True
     if not v.validate(zone_data["attrs"]):
         raise ZoneValidationException("ShiftRegisterZone validation failed", v.errors)
-    # return ShiftRegisterZone.of(ow, zone_data)
     return ShiftRegisterZone(ow, **zone_data)
 
 

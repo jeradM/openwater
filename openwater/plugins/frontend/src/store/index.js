@@ -1,7 +1,8 @@
 import Vue from "vue";
 import Vuex from "vuex";
-import zones from "./zones";
-import programs from "./programs";
+import zones from "./zones.module";
+import programs from "./programs.module";
+import schedules from "./schedules.module";
 
 Vue.use(Vuex);
 
@@ -9,8 +10,9 @@ const debug = process.env.NODE_ENV !== "production";
 
 export default new Vuex.Store({
   modules: {
-    zones,
     programs,
+    schedules,
+    zones,
   },
   state() {
     return {

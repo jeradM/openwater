@@ -3,15 +3,7 @@
     <h2 class="headline my-2">Schedules</h2>
     <v-card>
       <v-card-text>
-        <v-expansion-panels class="flex-column" flat>
-          <ProgramSchedule
-            class="schedulePanel"
-            v-for="(schedule, idx) in schedules"
-            :key="idx"
-            :schedule="schedule"
-            :idx="idx"
-          />
-        </v-expansion-panels>
+        <SchedulesList :schedules="schedules" />
       </v-card-text>
       <v-card-actions>
         <v-spacer />
@@ -22,10 +14,10 @@
 </template>
 
 <script>
-import ProgramSchedule from "./ProgramSchedule";
+import SchedulesList from "../schedules/ScheduleList";
 export default {
   name: "ProgramSchedules",
-  components: { ProgramSchedule },
+  components: { SchedulesList },
   props: {
     schedules: Array,
   },

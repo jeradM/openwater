@@ -1,11 +1,11 @@
 <template>
-  <v-sheet max-width="800" class="mx-auto">
-    <v-expansion-panels>
-      <template v-for="schedule in schedules">
-        <SchedulesListItem :schedule="schedule" :key="schedule.id" />
-      </template>
-    </v-expansion-panels>
-  </v-sheet>
+  <v-list>
+    <SchedulesListItem
+      v-for="schedule in schedules"
+      :schedule="schedule"
+      :key="schedule.id"
+    />
+  </v-list>
 </template>
 
 <script>
@@ -14,10 +14,8 @@ import SchedulesListItem from "./SchedulesListItem";
 export default {
   name: "SchedulesList",
   components: { SchedulesListItem },
-  computed: {
-    schedules() {
-      return this.$store.state.programs.schedules;
-    },
+  props: {
+    schedules: Array,
   },
 };
 </script>

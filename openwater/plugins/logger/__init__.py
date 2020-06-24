@@ -16,10 +16,10 @@ _STR_TO_LEVEL = {
 
 def get_level(level: Optional[str]) -> int:
     if level is None:
-        return logging.DEBUG
+        return logging.ERROR
     level_ = level.upper()
     if level_ not in _STR_TO_LEVEL:
-        return logging.DEBUG
+        return logging.ERROR
     return _STR_TO_LEVEL[level_]
 
 

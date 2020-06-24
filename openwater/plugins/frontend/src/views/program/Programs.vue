@@ -4,10 +4,10 @@
       to="/programs/add"
       color="secondary"
       fab
-      absolute
+      fixed
       bottom
       right
-      class="mb-12 mr-2"
+      class="mr-2"
     >
       <v-icon>mdi-plus</v-icon>
     </v-btn>

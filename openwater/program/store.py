@@ -91,3 +91,6 @@ class ProgramStore:
         if success:
             self.remove(program_id)
         return success
+
+    def set_steps(self, steps: List[ProgramStep]) -> None:
+        self.steps_ = {s.id: s for s in steps}

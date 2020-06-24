@@ -37,7 +37,8 @@ class ProgramController:
             self.current_program.id,
             self.current_program.name,
         )
-        self.remove_listener_sec()
+        if self.remove_listener_sec is not None:
+            self.remove_listener_sec()
         self.ow.bus.fire(
             EVENT_PROGRAM_COMPLETED, data={"program": self, "now": datetime.now()}
         )
