@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Optional
 
 from cerberus import Validator
 
+from openwater.constants import EVENT_ZONE_STATE
 from openwater.errors import ZoneException, ZoneValidationException
 from openwater.plugins.gpio import DATA_GPIO, OWGpio
 from openwater.zone.model import BaseZone
@@ -65,9 +66,11 @@ class ShiftRegisterZone(BaseZone):
 
     async def open(self) -> None:
         await self._sr.async_turn_on(self._sr_idx)
+        self._ow.bus.fire(EVENT_ZONE_STATE, self)
 
     async def close(self) -> None:
         await self._sr.async_turn_off(self._sr_idx)
+        self._ow.bus.fire(EVENT_ZONE_STATE, self)
 
     def get_zone_type(self) -> str:
         return "SHIFT_REGISTER"

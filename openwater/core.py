@@ -2,7 +2,7 @@ import asyncio
 import functools
 import logging
 import signal
-from asyncio import AbstractEventLoop
+from asyncio import AbstractEventLoop, Handle, TimerHandle
 from concurrent.futures.thread import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from typing import List, Callable, Dict, Optional, Union, Any, Awaitable, Coroutine
@@ -64,8 +64,8 @@ class OpenWater:
     def fire_coroutine(self, c: Coroutine) -> None:
         asyncio.create_task(c)
 
-    def run_coroutine_in(self, c: Coroutine, secs: int) -> None:
-        self.event_loop.call_later(secs, asyncio.create_task, c)
+    def run_coroutine_in(self, c: Coroutine, secs: int) -> TimerHandle:
+        return self.event_loop.call_later(secs, asyncio.create_task, c)
 
     def add_job_ext(self, c: Union[Callable, Awaitable], *args: Any) -> None:
         self.event_loop.call_soon_threadsafe(c, *args)
